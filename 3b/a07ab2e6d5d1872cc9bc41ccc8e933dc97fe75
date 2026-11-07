@@ -1,0 +1,41 @@
+scripts/check-pr-metadata.mjs
+  s_eb80e8fdbdac14::t_452853377594da 1-63
+.gitignore
+  s_eb80e8fdbdac14::t_f55b638d53737e 1-6
+scripts/lib/pr-metadata.mjs
+  s_eb80e8fdbdac14::t_452853377594da 1-75
+test/fixtures/invalid-event.json
+  s_eb80e8fdbdac14::t_b396ff2d6b4a9f 1-14
+test/helpers.mjs
+  s_eb80e8fdbdac14::t_f55b638d53737e 1-26
+test/pr-metadata.test.mjs
+  s_eb80e8fdbdac14::t_f55b638d53737e 1-62
+test/check-pr-metadata.test.mjs
+  s_eb80e8fdbdac14::t_f764fb3dce9fb6 1-84
+test/fixtures/commits.json
+  s_eb80e8fdbdac14::t_b396ff2d6b4a9f 1-6
+package.json
+  s_eb80e8fdbdac14::t_f55b638d53737e 1-13
+.node-version
+  s_eb80e8fdbdac14::t_f55b638d53737e 1
+test/fixtures/valid-event.json
+  s_eb80e8fdbdac14::t_b396ff2d6b4a9f 1-14
+package-lock.json
+  s_eb80e8fdbdac14::t_09a08f42e0a09c 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ba07ab2e6d5d1872cc9bc41ccc8e933dc97fe75",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

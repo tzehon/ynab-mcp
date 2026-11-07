@@ -11,7 +11,7 @@ import { origin, event } from './helpers.mjs';
 const cli = fileURLToPath(new URL('../scripts/check-pr-metadata.mjs', import.meta.url));
 function workspace(t) {
   const cwd = mkdtempSync(join(tmpdir(), 'ynab-test-'));
-  t.after(() => rmSync(cwd, { recursive: true, force: true }));
+  t.after(() => rmSync(cwd, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }));
   const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git('init', '-b', 'main'); git('config', 'user.name', 'Synthetic Tester'); git('config', 'user.email', 'test@example.invalid');
   git('config', 'commit.gpgsign', 'false'); git('config', 'core.hooksPath', '/dev/null');

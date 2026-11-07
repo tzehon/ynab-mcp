@@ -1,0 +1,13 @@
+{
+  "name": "ynab-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "26.13.0", "npm": "11.20.0" },
+  "packageManager": "npm@11.20.0",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "npm test",
+    "check:pr": "node scripts/check-pr-metadata.mjs"
+  }
+}

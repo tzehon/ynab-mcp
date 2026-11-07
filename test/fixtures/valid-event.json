@@ -1,0 +1,14 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "title": "YNAB-1: Synthetic delivery example",
+    "body": "Synthetic only; not actual approval.\n\n```ynab-metadata\n{\n  \"schemaVersion\": 1,\n  \"issueUrl\": \"https://example.invalid/browse/YNAB-1\",\n  \"approvals\": {\n    \"spec\": {\n      \"revision\": \"spec-r1\",\n      \"snapshotUrl\": \"https://example.invalid/rest/api/3/attachment/content/123\",\n      \"decisionUrl\": \"https://example.invalid/browse/YNAB-1?focusedCommentId=456\"\n    },\n    \"ac\": {\n      \"revision\": \"ac-r1\",\n      \"snapshotUrl\": \"https://example.invalid/rest/api/3/attachment/content/123\",\n      \"decisionUrl\": \"https://example.invalid/browse/YNAB-1?focusedCommentId=456\"\n    },\n    \"plan\": {\n      \"revision\": \"plan-r1\",\n      \"snapshotUrl\": \"https://example.invalid/rest/api/3/attachment/content/123\",\n      \"decisionUrl\": \"https://example.invalid/browse/YNAB-1?focusedCommentId=456\"\n    }\n  },\n  \"acceptanceCriteria\": [\n    {\n      \"id\": \"AC-1\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-2\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-3\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-4\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-5\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-6\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-7\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    },\n    {\n      \"id\": \"AC-8\",\n      \"check\": \"Manual synthetic fixture inspection\",\n      \"status\": \"passed\",\n      \"evidence\": \"Synthetic inspection completed for this test\"\n    }\n  ]\n}\n```\n",
+    "base": {
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "head": {
+      "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  }
+}

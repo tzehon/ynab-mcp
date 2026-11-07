@@ -1,3 +1,8 @@
+import {
+  fixtureMap,
+  validateFixtureMap,
+  type FixtureMap,
+} from "./fixtures/ynab.js";
 import { ConfigError } from "./errors.js";
 import { fixturePlans, validateCatalog, type Plan } from "./fixtures/plans.js";
 
@@ -6,10 +11,12 @@ export type Config = Readonly<{
   port: number;
   allowedIds: readonly string[];
   catalog: readonly Plan[];
+  fixtureMap: FixtureMap;
 }>;
 export function parseConfig(
   env: NodeJS.ProcessEnv,
   catalog: unknown = fixturePlans,
+  map: unknown = fixtureMap,
 ): Config {
   if (env.LOCAL_FIXTURE_MODE !== "true")
     throw new ConfigError("LOCAL_FIXTURE_MODE");
@@ -52,5 +59,6 @@ export function parseConfig(
     port: Number(portText),
     allowedIds: Object.freeze([...allowed] as string[]),
     catalog: plans,
+    fixtureMap: validateFixtureMap(plans, map),
   });
 }

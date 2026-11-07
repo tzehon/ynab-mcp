@@ -1,4 +1,3 @@
-const acIds = Array.from({ length: 8 }, (_, i) => `AC-${i + 1}`);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = value => typeof value === 'string' && value.trim().length > 0;
 const meaningful = value => text(value) && !/\b(?:TODO|TBD|CHANGEME|REPLACE_ME)\b|<[^>]*>/i.test(value)
@@ -22,6 +21,9 @@ export function validateMetadata({ title, body, jiraBaseUrl, commits } = {}) {
   const match = typeof title === 'string' && /^YNAB-([1-9][0-9]*): ([^\r\n]+)$/.exec(title);
   const keys = typeof title === 'string' ? title.match(/YNAB-[0-9]+/g) : null;
   const issueKey = match ? `YNAB-${match[1]}` : null;
+  // Explicit approved issue contract; future changes require review.
+  const acCount = issueKey === 'YNAB-3' ? 9 : 8;
+  const acIds = Array.from({ length: acCount }, (_, i) => `AC-${i + 1}`);
   if (!match || !meaningful(match[2]) || keys?.length !== 1)
     error('TITLE', 'Use YNAB-<positive integer>: <summary>, with exactly one primary key and one line.');
 
@@ -50,7 +52,7 @@ export function validateMetadata({ title, body, jiraBaseUrl, commits } = {}) {
     const entries = metadata.acceptanceCriteria;
     if (!Array.isArray(entries) || entries.length !== acIds.length ||
       !acIds.every(id => entries.filter(e => e?.id === id).length === 1)) {
-      error('AC', 'Include exactly one entry for each AC-1 through AC-8.');
+      error('AC', `Include exactly one entry for each AC-1 through AC-${acCount}.`);
     }
     if (Array.isArray(entries)) for (const entry of entries) {
       if (!object(entry) || !acIds.includes(entry.id) || !meaningful(entry.check) || !meaningful(entry.evidence)

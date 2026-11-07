@@ -3,6 +3,12 @@ import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
+import {
+  accountsOutput,
+  monthOutput,
+  categoriesOutput,
+  transactionsOutput,
+} from "../dist/tools/contracts.js";
 import { outputSchema } from "../dist/tools/list-plans.js";
 
 export function parseTarget(value) {
@@ -56,7 +62,7 @@ export async function runSmoke(value, report = () => {}) {
         throw new Error("WRONG_PROTOCOL_ERA");
       const { tools } = await client.listTools(undefined, requestOptions);
       if (
-        tools.length !== 1 ||
+        tools.length !== 5 ||
         tools[0].name !== "ynab_list_plans" ||
         tools[0].annotations?.readOnlyHint !== true ||
         !tools[0].outputSchema
@@ -78,6 +84,37 @@ export async function runSmoke(value, report = () => {}) {
           JSON.stringify(output)
       )
         throw new Error("INVALID_TOOL_OUTPUT");
+      const plan =
+        output.plans.find((p) => p.id === "fixture-plan-sgd") ??
+        output.plans.find((p) => p.id === "fixture-plan-usd");
+      if (!plan) throw new Error("NO_SMOKE_PLAN");
+      for (const [name, schema, extra] of [
+        ["ynab_list_accounts", accountsOutput, {}],
+        ["ynab_get_month", monthOutput, { month: "2026-11-01" }],
+        ["ynab_list_categories", categoriesOutput, {}],
+        [
+          "ynab_list_transactions",
+          transactionsOutput,
+          { since_date: "2026-11-01", until_date: "2026-11-07" },
+        ],
+      ]) {
+        const tool = tools.find((t) => t.name === name);
+        if (!tool?.outputSchema || tool.annotations?.readOnlyHint !== true)
+          throw new Error("INVALID_TOOL_CATALOG");
+        const result = await client.callTool(
+          { name, arguments: { plan_id: plan.id, ...extra } },
+          requestOptions,
+        );
+        if (result.isError) throw new Error("TOOL_FAILED");
+        const data = schema.parse(result.structuredContent);
+        if (
+          result.content.length !== 1 ||
+          result.content[0].type !== "text" ||
+          JSON.stringify(JSON.parse(result.content[0].text)) !==
+            JSON.stringify(data)
+        )
+          throw new Error("INVALID_TOOL_OUTPUT");
+      }
       report(era);
     } finally {
       await client.close();

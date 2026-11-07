@@ -66,6 +66,14 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
       source,
       /node:(?:fs|https|dns|dgram|child_process)|\beval\s*\(|\bnew Function\b/,
     );
-    assert.doesNotMatch(source, /https?:\/\/api\.|YNAB_ACCESS_TOKEN\s*[=:]/);
+    assert.doesNotMatch(
+      source,
+      /YNAB_ACCESS_TOKEN\s*[=:]|\bhttps?\.(?:request|get)\s*\(/,
+    );
+    if (path !== "http.ts") assert.doesNotMatch(source, /\bfetch\s*\(/);
+    if (path !== "ynab/transport.ts")
+      assert.doesNotMatch(source, /https?:\/\/api\./);
+    else
+      assert.equal((source.match(/https:\/\/api\.ynab\.com/g) ?? []).length, 1);
   }
 });

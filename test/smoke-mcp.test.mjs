@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { once } from "node:events";
-import { parseTarget } from "../scripts/smoke-mcp.mjs";
+import { parseTarget, runSmoke } from "../scripts/smoke-mcp.mjs";
 import { serve } from "./helpers/server.mjs";
 import { unusedPort } from "./helpers/process.mjs";
 
@@ -44,6 +44,27 @@ test("smoke CLI succeeds for both eras without dumping fixture contents", async 
   assert.match(r.output, /MCP_SMOKE_PASS modern/);
   assert.ok(!r.output.includes("Invented"));
   assert.ok(!r.output.includes("fixture-plan"));
+});
+test("smoke retains explicit port 80 in Host after URL normalization", async (t) => {
+  const app = await serve(t),
+    realFetch = globalThis.fetch;
+  let requests = 0;
+  t.after(() => {
+    globalThis.fetch = realFetch;
+  });
+  globalThis.fetch = (url, init) => {
+    assert.equal(String(url), "http://127.0.0.1/mcp");
+    const headers = new Headers(init.headers);
+    assert.equal(headers.get("Host"), "127.0.0.1:80");
+    requests++;
+    // Route to an ephemeral listener so CI needs no privileged port binding.
+    headers.set("Host", `127.0.0.1:${app.port}`);
+    return realFetch(app.url, { ...init, headers });
+  };
+  const eras = [];
+  await runSmoke("http://127.0.0.1:80/mcp", (era) => eras.push(era));
+  assert.deepEqual(eras, ["legacy", "modern"]);
+  assert.ok(requests >= 7);
 });
 test("smoke CLI rejects unreachable and invalid targets without echoing input", async () => {
   for (const url of [

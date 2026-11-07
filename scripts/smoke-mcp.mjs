@@ -34,8 +34,13 @@ export async function runSmoke(value, report = () => {}) {
       fetch: (input, init = {}) => {
         const target = new URL(input instanceof Request ? input.url : input);
         if (target.href !== url.href) throw new Error("INVALID_SMOKE_TARGET");
+        // URL normalizes explicit :80 away, but the local server deliberately
+        // requires the exact authority including its listening port.
+        const headers = new Headers(init.headers);
+        headers.set("Host", `127.0.0.1:${url.port || "80"}`);
         return fetch(input, {
           ...init,
+          headers,
           redirect: "error",
           signal: AbortSignal.any([
             whole,

@@ -10,9 +10,10 @@ export const fixtureEnv = {
   NODE_ENV: "test",
   FIXTURE_ALLOWED_PLAN_IDS: '["fixture-plan-sgd"]',
 };
-export async function serve(t, env = {}, catalog) {
+export async function serve(t, env = {}, catalog, transport) {
   const app = createFixtureHttp(
     parseConfig({ ...fixtureEnv, ...env }, catalog),
+    transport,
   );
   await new Promise((resolve, reject) => {
     app.server.once("error", reject);

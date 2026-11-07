@@ -3,6 +3,10 @@ import type { Socket } from "node:net";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import type { Config } from "./config.js";
 import { createFixtureHandler } from "./mcp.js";
+import { MockYnabClient } from "./ynab/client.js";
+import { fixtureTransport } from "./fixtures/ynab.js";
+import type { MockTransport } from "./ynab/transport.js";
+import { canonicalError } from "./tools/errors.js";
 import { operationalLog } from "./errors.js";
 
 function reply(res: ServerResponse, status: number, code: string) {
@@ -30,21 +34,30 @@ export function sanitizeProtocolResponse(value: unknown): unknown {
   }
   if (body.result && typeof body.result === "object") {
     const result = body.result as Record<string, unknown>;
-    if (result.isError === true)
+    if (result.isError === true) {
+      const known = canonicalError(result);
       return {
         ...body,
         result: {
-          ...result,
-          structuredContent: undefined,
-          isError: true,
-          content: [{ type: "text", text: "TOOL_REQUEST_REJECTED" }],
+          ...(result.resultType === "complete"
+            ? { resultType: "complete" }
+            : {}),
+          ...(known ?? {
+            isError: true,
+            content: [{ type: "text", text: "TOOL_REQUEST_REJECTED" }],
+          }),
         },
       };
+    }
   }
   return value;
 }
-export function createFixtureHttp(config: Config) {
-  const handler = createFixtureHandler(config);
+export function createFixtureHttp(
+  config: Config,
+  transport: MockTransport = fixtureTransport,
+) {
+  const client = new MockYnabClient(config, transport);
+  const handler = createFixtureHandler(config, client);
   const guardedFetch = {
     async fetch(request: Request) {
       // This slice has no subscription streams, even when the SDK supports them.
@@ -166,6 +179,7 @@ export function createFixtureHttp(config: Config) {
   return {
     server,
     async close() {
+      client.close();
       const closed = server.listening
         ? new Promise<void>((resolve) => server.close(() => resolve()))
         : Promise.resolve();

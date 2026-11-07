@@ -25,7 +25,7 @@ for (const era of ["legacy", "modern"])
       assert.ok(wire.some((m) => m.method === "notifications/initialized"));
     } else assert.ok(wire.some((m) => m.method === "server/discover"));
     const { tools } = await c.listTools();
-    assert.equal(tools.length, 1);
+    assert.equal(tools.length, 5);
     assert.equal(tools[0].name, "ynab_list_plans");
     assert.equal(tools[0].inputSchema.additionalProperties, false);
     assert.ok(tools[0].outputSchema);
@@ -35,6 +35,41 @@ for (const era of ["legacy", "modern"])
       idempotentHint: true,
       openWorldHint: false,
     });
+    for (const tool of tools) {
+      assert.equal(tool.inputSchema.additionalProperties, false);
+      assert.ok(tool.outputSchema);
+      assert.equal(tool.annotations.readOnlyHint, true);
+      assert.equal(tool.annotations.destructiveHint, false);
+    }
+    for (const [name, extra] of [
+      ["ynab_list_accounts", {}],
+      ["ynab_get_month", { month: "2026-11-01" }],
+      ["ynab_list_categories", {}],
+      [
+        "ynab_list_transactions",
+        { since_date: "2026-11-01", until_date: "2026-11-07" },
+      ],
+    ]) {
+      const result = await c.callTool({
+        name,
+        arguments: { plan_id: "fixture-plan-sgd", ...extra },
+      });
+      assert.ok(!result.isError, JSON.stringify(result));
+      assert.equal(result.structuredContent.source, "mock-ynab");
+      assert.deepEqual(
+        JSON.parse(result.content[0].text),
+        result.structuredContent,
+      );
+      const denied = await c.callTool({
+        name,
+        arguments: { plan_id: "fixture-plan-usd", ...extra },
+      });
+      assert.equal(denied.isError, true);
+      assert.deepEqual(JSON.parse(denied.content[0].text), {
+        error: { code: "PLAN_NOT_ALLOWED", message: "Plan is not allowed." },
+      });
+      assert.equal(denied.structuredContent, undefined);
+    }
     for (const args of [{}, undefined]) {
       const result = await c.callTool({
         name: "ynab_list_plans",

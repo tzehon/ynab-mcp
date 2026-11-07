@@ -40,7 +40,7 @@ Both LOCAL_FIXTURE_MODE=true and DATA_MODE=fixtures are mandatory. Bind literall
 127.0.0.1; production/live configuration and a nonempty YNAB_ACCESS_TOKEN fail.
 Missing/empty allowlist denies all plans. Never expose this unauthenticated fixture
 server through a proxy, tunnel or hosting service. No deployment command exists.
-The single tool is read-only; test legacy initialize and modern discovery over
+All five tools are read-only; test legacy initialize and modern discovery over
 real HTTP. SDK interoperability does not prove actual Codex/ChatGPT connectivity.
 
 Report commands actually run,
@@ -54,3 +54,18 @@ Use synthetic data only. Keep credentials, personal financial data, actual Jira
 snapshots and private configuration out of source, tests and logs. Use 1Password
 for private details and ignored `.local/` for local scratch. No service credential
 is needed for fixture operation. Do not create YNAB/Auth0/Railway resources for this issue.
+
+New read tools use only the required injected mock transport. Preserve strict
+schemas, pre-dispatch allowlisting, exact safe integer milliunits, synthetic currency
+and timestamp context, nested splits, metadata-only categories and truthful
+truncation. No inferred totals, retries, live fallback or persistent state. Keep the
+four-call process budget, three-second deadline, raw/output caps and canonical
+fixed errors. Smoke requires at least one allowed built-in plan and exercises all
+five tools without logging their data.
+
+Before claiming Jira completion, directly read status, resolution and resolutiondate
+independently after transition: require Done/category done, Resolution Done with
+ID, populated resolutiondate. At resume and after closure/reopening, paginate the
+project query for Done-with-empty-resolution or non-Done-with-resolution. Missing
+fields/errors do not pass. Reopening must clear resolution and date. Preserve
+unrelated work; do not bulk-close issues. These are manual agent checks, not CI.

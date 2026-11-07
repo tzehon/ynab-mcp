@@ -1,8 +1,8 @@
 # ynab-mcp
 
 A local, fixture-only MCP server and delivery checks for a future personal,
-read-only YNAB service. The server returns invented data from one tool,
-`ynab_list_plans`. It is not connected to YNAB, Codex or ChatGPT, and is not hosted.
+read-only YNAB service. Five tools expose invented plans, accounts, month values,
+category metadata and transactions through an in-memory mock adapter. It is not connected to YNAB, Codex or ChatGPT, and is not hosted.
 Authenticated Railway deployment and real client connections are later work.
 
 ## Set up or resume on another machine
@@ -64,9 +64,12 @@ npm run smoke:mcp -- --url http://127.0.0.1:3000/mcp
 ```
 
 Health returns `{"status":"ok","data_mode":"fixtures"}`. Smoke prints a pass for
-each protocol era without dumping plans. It uses the official SDK client, tests
+each protocol era after checking all five tools, without dumping data. It uses the official SDK client, tests
 discovery/list/call and schema validation, rejects redirects and any noncanonical
 loopback URL, and bounds each HTTP operation to 5 seconds and the run to 20 seconds.
+Allowlist at least one built-in plan for smoke (SGD is preferred, otherwise USD).
+Smoke reads the synthetic November 2026 month/window. Deny-all is valid server
+configuration, but smoke deliberately fails because it cannot exercise all tools.
 A failed check exits nonzero with a generic diagnostic.
 
 Both opt-in flags are required. `HOST` must be absent or literally `127.0.0.1`;
@@ -80,7 +83,7 @@ no plans; malformed, duplicate or unknown IDs reject startup. The two built-in
 plans are invented SGD/USD examples. Results are sorted by ID, bounded to ten
 plans, marked `data_mode: fixtures` and `truncated: false`. The tool accepts only
 an empty object (or omitted arguments), advertises read-only/non-destructive
-annotations, and has no write or external-data adapter. Annotations describe the
+annotations, and does not invoke the mock adapter. Annotations describe the
 tool; schema validation and server behavior enforce its boundaries.
 
 Only an exact `Host: 127.0.0.1:<port>` is accepted. Origin must be absent or exactly
@@ -95,13 +98,68 @@ there are no persistent SSE subscriptions. Legacy SDK initialization uses protoc
 compare normalized logical results. SDK 2.4's stateless legacy handler emits a
 finite SSE result even in JSON mode, so the HTTP adapter converts that terminal
 event to JSON and redacts SDK error details while retaining protocol fields.
-The SDK's static warning about dropped notifications is expected; this tool emits
+The SDK's static warning about dropped notifications is expected; these tools emit
 none. This interoperability evidence is not a real Codex/ChatGPT connection test.
 
 Bodies are limited to 65,536 bytes (larger bodies return 413). Every connection
 closes after its response and has a 10-second total deadline, including incomplete
 headers/bodies. Shutdown closes sockets and resources within 5 seconds. Diagnostics
 contain fixed codes and the listening port, not request bodies, headers or secrets.
+
+## Mock read tools
+
+All five tools are read-only and require no service credential. The new tools
+accept strict arguments with the existing public `fixture-plan-sgd` or
+`fixture-plan-usd` IDs. Unknown/disallowed plans fail before transport dispatch.
+The immutable fixture map supplies synthetic UUIDs, matching currency, and
+`as_of: 2026-11-07T00:00:00Z`. This is a fixture timestamp, not live freshness.
+
+| Tool | Arguments | Result semantics |
+| --- | --- | --- |
+| `ynab_list_plans` | `{}` or omitted | Original allowlisted local catalog |
+| `ynab_list_accounts` | `plan_id` | Nondeleted accounts, including closed/off-budget accounts; exact balances |
+| `ynab_get_month` | `plan_id`, `month` | Direct mocked month values; day must be 01 |
+| `ynab_list_categories` | `plan_id` | Metadata only; hidden/internal flags and empty groups retained; no balances/goals/notes |
+| `ynab_list_transactions` | `plan_id`, `since_date`, `until_date`, optional `limit` | Nondeleted, non-pending records; splits nested and transfers retained |
+
+Dates are real `YYYY-MM-DD` values in 2000–2099. Transaction windows are inclusive,
+1–90 days; limit is an integer 1–100, default 50. Results sort date descending then
+ID ascending. `available_count` counts matching records in the bounded mock
+response; `returned_count` is emitted length and `truncated` indicates a limit cut.
+Narrow a truncated window or increase limit; there is no cursor or guarantee of
+complete retrieval through pagination. `pending_excluded: true` does not mean all
+returned transactions are cleared or approved. Deleted children disappear without
+rebalancing their parent; transfer pairs need not both be present.
+
+Every new success has `data_mode: fixtures`, `source: mock-ynab`, public plan ID,
+currency, synthetic timestamp and truncation flag. Money remains signed safe
+integer `*_milliunits` (1000 = one currency unit). No rounding, currency conversion,
+spending classification, cross-record totals or transaction-derived month totals
+are performed. Instruction-like names/memos remain inert JSON text.
+
+The injected mock consumes fixed GET descriptors for accounts, months, categories
+and transactions at the YNAB origin **without issuing network requests**. It returns
+HTTP-like status/headers and byte chunks; the adapter validates and projects them.
+Wire shape reference: [official schema](https://api.ynab.com/papi/open_api_spec.yaml),
+version 1.89.0 inspected on 2026-11-07. This is mocked contract evidence, not live
+API validation. No environment or tool argument selects another transport.
+
+Each call has one attempt, a three-second absolute deadline and a shared process
+budget of four active adapter calls. Excess calls return `BUSY`; cancellation and
+shutdown release capacity even if a mock ignores abort. There are no retries,
+caches or persistent state. Raw JSON is bounded to 1 MiB before parsing, with caps
+of 200 accounts, 100 groups/1000 categories, 1000 month categories, and 1000 parent
+transactions/100 children each/2000 children total. Validation precedes deletion
+and date filtering. Duplicate IDs, inconsistent parent references and invalid
+consumed fields fail the whole call. Extra unconsumed wire fields are discarded.
+Normalized compact JSON is bounded to 65,536 UTF-8 bytes; its matching MCP text
+copy adds protocol overhead. Oversize results fail instead of returning partial rows.
+
+Application failures contain only `isError: true` and one JSON text block with a
+fixed error code/message, with no success-shaped structured content. Denials,
+not-found, upstream status errors, timeouts, malformed/oversized responses, oversized
+results and busy capacity are distinguishable. Upstream bodies, headers and exception
+text never enter diagnostics. SDK validation failures retain generic redaction.
 
 ## Checks and supported dependencies
 
@@ -179,10 +237,12 @@ Fill out `.github/pull_request_template.md`. Keep exactly one fenced
 - `approvals.spec`, `.ac` and `.plan`: each has `revision`, `snapshotUrl` and
   `decisionUrl`. Use same-site attachment URLs and decision links to the same
   issue with `?focusedCommentId=<comment-id>`. Replace all placeholders.
-- `acceptanceCriteria`: exactly one entry each for `AC-1` through `AC-8` for this
-  current eight-AC contract. Each entry has `id`, a specific `check`, `status` and `evidence`.
+- `acceptanceCriteria`: exactly one entry each for `AC-1` through `AC-9` on YNAB-3.
+  The existing eight-entry contract remains for other issues. Each entry has `id`, a specific `check`, `status` and `evidence`.
   Status is `passed`, `failed` or `pending`; pending also requires `remaining`.
-  Later issues with different AC sets require an explicit validator change.
+  Later issues with different AC sets require an explicit validator change. The
+  issue-specific nine-entry rule accommodates the approved adapter contract; it
+  does not make AC coverage optional or alter approval/commit validation.
 
 Malformed data, failed ACs, missing commit keys or missing trusted configuration
 exit 1. Pending evidence is accepted for work in review, printed separately, and
@@ -236,3 +296,12 @@ Before requesting the owner's merge decision:
 The guided setup and checkpoint register live in
 [the research guide](https://github.com/tzehon/research/tree/main/ynab-mcp-sdlc-guide).
 Current specifications and approval snapshots remain in Jira.
+
+Before reporting Jira closure, independently read status, resolution and
+resolutiondate after the transition. Require Done/status category done, Resolution
+Done with an ID, and a populated resolution date. A successful transition response
+alone is insufficient. At resume and after closure/reopening, paginate the project
+query for `(statusCategory = Done AND resolution IS EMPTY) OR
+(statusCategory != Done AND resolution IS NOT EMPTY)`. Missing fields/errors leave
+closure unverified; reopening must clear resolution and its date. Do not bulk-close
+unrelated issues. This is an agent check, not an authenticated CI assertion.

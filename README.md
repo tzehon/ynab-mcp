@@ -30,6 +30,11 @@ validator and workflow documentation. No MCP server is implemented or deployed.
    approved fields against their Jira attachments. Existing Codex/Atlassian logins
    are machine/environment-specific; test the connector before adding another.
 
+If an HTTPS push containing `.github/workflows/` is rejected for missing OAuth
+`workflow` scope, run `gh auth refresh --hostname github.com --scopes workflow`
+and complete GitHub's device authorization yourself. Retry the same feature-branch
+push; do not remove the workflow or push main to work around the rejection.
+
 No service tokens are required. Keep private account details in the 1Password
 entry **YNAB MCP deployment** and local exports in ignored `.local/`. Never commit
 live YNAB data, credentials or approval exports. Cloning proves repeatable local
@@ -96,9 +101,19 @@ the authenticated checks manually. No Jira/YNAB/OpenAI API credentials enter CI.
 ## Review, traceability and completion
 
 Use issue-keyed branches, commits and PR titles, plus full Jira links in the PR.
-The configured numeric autolink makes keys clickable from GitHub. In Jira, open
-the issue's Development panel to find related branches, PRs and commits; native
-sync can take time. Missing links are unfinished verification, not proof of success.
+Verified navigation on the bootstrap PR:
+
+- Jira issue → **Development** → PR details → **View pull request**.
+- Jira issue → **View development activity** → **Commits** → commit hash.
+- GitHub PR → the **YNAB-1** link in its description → Jira issue.
+- GitHub commit page → associated **#1** PR link → **YNAB-1** link → Jira issue.
+
+The commit title itself was plain text in the observed GitHub UI; use its
+associated PR for the two-click return path. The numeric autolink also supports
+issue-key references in supported GitHub text. Native sync can take time;
+missing links are unfinished verification, not proof of success. Use the actual
+issue and PR numbers for later work. Delivered-commit navigation must be checked
+again after merge.
 
 `PR checks` runs `bootstrap-tests` and `pr-metadata` for PR opened, synchronize,
 reopened and edited events against main, with read-only permissions and pinned

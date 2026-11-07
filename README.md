@@ -157,8 +157,14 @@ synthetic test merge. No contributor/merge commit is exempt. Missing, shallow,
 unrelated or empty history fails. Git runs through argument arrays without a shell.
 
 In Actions, the event comes from `GITHUB_EVENT_PATH` and the origin comes from the
-repository Actions variable `JIRA_BASE_URL`. Missing configuration fails explicitly.
-The origin is not a credential; do not place it in committed fixtures or print it.
+repository Actions secret `JIRA_BASE_URL`. Missing configuration fails explicitly.
+The origin is not a credential; secret storage prevents GitHub's step environment
+listing from printing it. Keep its exact HTTPS origin in the private register;
+an administrator can set it with `gh secret set JIRA_BASE_URL` from this checkout
+and enter the value at the private prompt. Do not place it in committed fixtures
+or print it. Fork PRs do not receive this setting and fail closed; they require
+maintainer review and an approved same-repository branch, never a privileged
+`pull_request_target` workaround. No Jira API credentials are used by CI.
 Full Jira links intentionally appear in the public PR for traceability; keep
 snapshot contents and private configuration outside Git. Jira access still requires
 the viewer's own permission.

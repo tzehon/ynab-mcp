@@ -46,4 +46,4 @@ jobs:
       - name: Validate event metadata and real commits
         run: npm run check:pr
         env:
-          JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}

@@ -17,7 +17,7 @@ export function validateMetadata({ title, body, jiraBaseUrl, commits } = {}) {
   const errors = [], pending = [], passed = [];
   const error = (code, message) => errors.push({ code, message });
   const origin = httpsUrl(jiraBaseUrl);
-  if (!origin || origin.pathname !== '/' || origin.search || origin.hash)
+  if (origin?.pathname !== '/' || origin.search || origin.hash)
     error('CONFIG', 'Set JIRA_BASE_URL to the trusted HTTPS Jira origin without a path, query or credentials.');
   const match = typeof title === 'string' && /^YNAB-([1-9][0-9]*): ([^\r\n]+)$/.exec(title);
   const keys = typeof title === 'string' ? title.match(/YNAB-[0-9]+/g) : null;

@@ -1,0 +1,25 @@
+.github/pull_request_template.md
+  s_eb80e8fdbdac14::t_79537e9997fa33 1-95
+.github/workflows/pr-checks.yml
+  s_eb80e8fdbdac14::t_9dd15d868682f8 1-46
+README.md
+  s_eb80e8fdbdac14::t_0fc9964a906198 2-125
+AGENTS.md
+  s_eb80e8fdbdac14::t_9dd15d868682f8 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0b729803b6678197e2f46266b3f52e062cf48e0",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

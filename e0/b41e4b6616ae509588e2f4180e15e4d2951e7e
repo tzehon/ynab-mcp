@@ -1,0 +1,14 @@
+test/ynab-contract-boundaries.test.mjs
+  h_60534644ebf874 1-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e0b41e4b6616ae509588e2f4180e15e4d2951e7e",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

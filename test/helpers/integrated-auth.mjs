@@ -57,7 +57,13 @@ export class Browser {
         "content-type": "application/x-www-form-urlencoded",
         origin: new URL(url).origin,
       },
-      body: new URLSearchParams({ csrf, decision }),
+      body: new URLSearchParams({
+        csrf,
+        decision,
+        ...(text.match(/name="flow_id" value="([^"]+)"/)
+          ? { flow_id: text.match(/name="flow_id" value="([^"]+)"/)[1] }
+          : {}),
+      }),
     });
   }
 }

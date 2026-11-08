@@ -296,3 +296,48 @@ test("no-referrer browser form requires same-origin navigation plus CSRF and bin
   assert.equal(await send(f.url), 303);
   assert.equal(await send(f.url), 400);
 });
+
+for (const order of [
+  [0, 1],
+  [1, 0],
+]) {
+  test(`two upstream consent pages finish independently in order ${order}`, async (t) => {
+    const h = await harness(t),
+      b = new Browser(),
+      flows = [await begin(h, b), await begin(h, b)],
+      forms = [];
+    for (const flow of flows) {
+      const go = await flow.submit(),
+        url = go.headers.get("location"),
+        r = await b.fetch(url),
+        text = await r.text();
+      forms.push({
+        url,
+        csrf: text.match(/name="csrf" value="([^"]+)"/)[1],
+        flow_id: text.match(/name="flow_id" value="([^"]+)"/)[1],
+      });
+    }
+    const submit = (form, browser = b) =>
+      browser.fetch(form.url, {
+        method: "POST",
+        headers: {
+          origin: h.mock.origin,
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ ...form, decision: "allow" }),
+      });
+    assert.equal(
+      (await submit({ ...forms[0], flow_id: forms[1].flow_id })).status,
+      400,
+    );
+    assert.equal((await submit(forms[0], new Browser())).status, 400);
+    for (const i of order) {
+      const r = await submit(forms[i]);
+      assert.equal(r.status, 303);
+      await complete(h, flows[i], r.headers.get("location"));
+      assert.equal((await submit(forms[i])).status, 400);
+    }
+    assert.equal(h.mock.counts.exchange, 2);
+    assert.equal((await b.fetch(`${h.origin}/connection`)).status, 200);
+  });
+}

@@ -7,6 +7,7 @@ const random = () => randomBytes(32).toString("base64url");
 export function mockYnab({ port, callback, secret, owner, expires = 3600 }) {
   const origin = `http://127.0.0.1:${port}`,
     pending = new Map(),
+    browsers = new Map(),
     codes = new Map(),
     access = new Map(),
     refresh = new Map();
@@ -54,17 +55,25 @@ export function mockYnab({ port, callback, secret, owner, expires = 3600 }) {
           !q.get("state")
         )
           throw Error();
+        const cookieValues = (req.headers.cookie ?? "")
+          .split(/;\s*/)
+          .filter((c) => c.startsWith("mock_ynab="));
+        const candidate =
+          cookieValues.length === 1 ? cookieValues[0].slice(10) : undefined;
+        const browser =
+          (browsers.get(candidate) ?? 0) > Date.now() ? candidate : random();
+        browsers.set(browser, Date.now() + 3600000);
         const id = random(),
           csrf = random();
-        pending.set(id, { params: q, csrf, at: Date.now() });
+        pending.set(id, { params: q, csrf, browser, at: Date.now() });
         counts.authorize++;
         res.setHeader(
           "Set-Cookie",
-          `mock_ynab=${id}; HttpOnly; SameSite=Lax; Path=/`,
+          `mock_ynab=${browser}; HttpOnly; SameSite=Lax; Path=/`,
         );
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
         res.end(
-          `<h1>Synthetic YNAB account — no real login</h1><form method="post" action="/oauth/authorize"><input name="csrf" value="${csrf}" type="hidden"><button name="decision" value="allow">Allow read-only</button><button name="decision" value="deny">Deny</button></form>`,
+          `<h1>Synthetic YNAB account — no real login</h1><form method="post" action="/oauth/authorize"><input name="flow_id" value="${id}" type="hidden"><input name="csrf" value="${csrf}" type="hidden"><button name="decision" value="allow">Allow read-only</button><button name="decision" value="deny">Deny</button></form>`,
         );
         return;
       }
@@ -98,12 +107,20 @@ export function mockYnab({ port, callback, secret, owner, expires = 3600 }) {
           )
         )
           throw Error();
-        const id = (req.headers.cookie ?? "")
-            .split(/;\s*/)
-            .find((c) => c.startsWith("mock_ynab="))
-            ?.slice(10),
+        const cookieValues = (req.headers.cookie ?? "")
+          .split(/;\s*/)
+          .filter((c) => c.startsWith("mock_ynab="));
+        const browser =
+            cookieValues.length === 1 ? cookieValues[0].slice(10) : undefined,
+          id = form.get("flow_id"),
           p = pending.get(id);
-        if (!p || p.csrf !== form.get("csrf") || Date.now() - p.at > 300000)
+        if (
+          !p ||
+          p.browser !== browser ||
+          (browsers.get(browser) ?? 0) <= Date.now() ||
+          p.csrf !== form.get("csrf") ||
+          Date.now() - p.at > 300000
+        )
           throw Error();
         pending.delete(id);
         const out = new URL(callback);

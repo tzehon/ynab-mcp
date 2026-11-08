@@ -33,6 +33,7 @@ async function begin(h, b = new Browser()) {
     b,
     url,
     csrf,
+    verifier,
     headers: r.headers,
     async submit(extra = {}, browser = b) {
       return browser.fetch(url, {
@@ -61,6 +62,15 @@ test("consent enforces CSRF, session, header policy and single-use submission", 
     /frame-ancestors 'none'/,
   );
   assert.match(f.headers.get("set-cookie"), /HttpOnly.*SameSite=Lax/);
+  const policy = f.headers.get("content-security-policy");
+  const formAction = policy
+    .split(";")
+    .find((part) => part.trim().startsWith("form-action"));
+  assert.equal(
+    formAction.trim(),
+    `form-action 'self' ${h.mock.origin} ${new URL(h.env.OAUTH_NATIVE_CALLBACK).origin}`,
+  );
+  assert(!policy.includes("*"));
   assert.equal((await f.submit({ csrf: "wrong" })).status, 400);
   assert.equal((await f.submit({}, new Browser())).status, 400);
   assert.equal((await f.submit()).status, 303);
@@ -157,4 +167,132 @@ test("revoked/tampered grant associations cannot authorize signed MCP tokens", a
     ).status,
     401,
   );
+});
+
+async function complete(h, flow, callback) {
+  let r = await flow.b.fetch(callback ?? (await upstreamCallback(flow)));
+  for (let i = 0; i < 8 && r.headers.has("location"); i++) {
+    const location = new URL(r.headers.get("location"), h.origin).href;
+    if (location.startsWith(h.env.OAUTH_NATIVE_CALLBACK)) {
+      const result = await exchange(h, {
+        params: new URL(location).searchParams,
+        callback: h.env.OAUTH_NATIVE_CALLBACK,
+        verifier: flow.verifier,
+      });
+      assert.equal(result.status, 200);
+      return result.body.access_token;
+    }
+    r = await flow.b.fetch(location);
+  }
+  assert.fail(`completion status ${r.status}`);
+}
+for (const pendingCallback of [false, true]) {
+  test(`both tabs finish after one establishes an owner session; callback pending=${pendingCallback}`, async (t) => {
+    const h = await harness(t),
+      b = new Browser(),
+      first = await begin(h, b),
+      second = await begin(h, b);
+    const binding = b.cookies.get("127.0.0.1:/:oauth_local").value;
+    const secondCallback = pendingCallback
+      ? await upstreamCallback(second)
+      : undefined;
+    const firstToken = await complete(h, first);
+    const firstOwner = b.cookies.get("127.0.0.1:/:oauth_owner").value;
+    const secondToken = await complete(h, second, secondCallback);
+    assert.equal(b.cookies.get("127.0.0.1:/:oauth_local").value, binding);
+    assert.notEqual(b.cookies.get("127.0.0.1:/:oauth_owner").value, firstOwner);
+    assert.equal((await b.fetch(`${h.origin}/connection`)).status, 200);
+    for (const token of [firstToken, secondToken]) {
+      assert.equal(
+        (
+          await fetch(`${h.origin}/mcp`, {
+            headers: { authorization: `Bearer ${token}` },
+          })
+        ).status,
+        405,
+      );
+    }
+    const old = new Browser();
+    old.cookies.set("owner", {
+      host: "127.0.0.1",
+      path: "/",
+      name: "oauth_owner",
+      value: firstOwner,
+    });
+    assert.equal((await old.fetch(`${h.origin}/connection`)).status, 400);
+    assert.equal(h.mock.counts.exchange, 2);
+  });
+}
+test("unrecognized browser binding is replaced and cannot become an owner session", async (t) => {
+  const h = await harness(t),
+    b = new Browser(),
+    fixed = randomBytes(32).toString("base64url");
+  b.cookies.set("127.0.0.1:/:oauth_local", {
+    host: "127.0.0.1",
+    path: "/",
+    name: "oauth_local",
+    value: fixed,
+  });
+  const flow = await begin(h, b),
+    binding = b.cookies.get("127.0.0.1:/:oauth_local").value;
+  assert.notEqual(binding, fixed);
+  await complete(h, flow);
+  const owner = b.cookies.get("127.0.0.1:/:oauth_owner").value;
+  assert.notEqual(owner, binding);
+  b.cookies.delete("127.0.0.1:/:oauth_owner");
+  assert.equal((await b.fetch(`${h.origin}/connection`)).status, 400);
+});
+
+test("no-referrer browser form requires same-origin navigation plus CSRF and binding", async (t) => {
+  const h = await harness(t),
+    f = await begin(h);
+  const headers = {
+    origin: "null",
+    "sec-fetch-site": "same-origin",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-dest": "document",
+    "content-type": "application/x-www-form-urlencoded",
+  };
+  // Node fetch owns sec-fetch-mode; use raw HTTP for the browser-shaped request.
+  const { request } = await import("node:http");
+  const send = (url, changes = {}, csrf = f.csrf, cookies = true) =>
+    new Promise((resolve, reject) => {
+      const req = request(
+        url,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            ...(cookies
+              ? {
+                  cookie: [...f.b.cookies.values()]
+                    .map((c) => `${c.name}=${c.value}`)
+                    .join("; "),
+                }
+              : {}),
+            ...changes,
+          },
+        },
+        (res) => {
+          res.resume();
+          res.on("end", () => resolve(res.statusCode));
+        },
+      );
+      req.on("error", reject);
+      req.end(new URLSearchParams({ csrf, decision: "continue" }).toString());
+    });
+  for (const changes of [
+    { "sec-fetch-site": "cross-site" },
+    { "sec-fetch-site": "none" },
+    { "sec-fetch-mode": "cors" },
+    { "sec-fetch-dest": "empty" },
+    { origin: "http://evil.invalid" },
+  ]) {
+    assert.equal(await send(f.url, changes), 403);
+  }
+  assert.equal(await send(`${h.origin}/mcp`), 403);
+  assert.equal(await send(f.url, {}, "wrong"), 400);
+  assert.equal(await send(f.url, {}, f.csrf, false), 400);
+  assert.equal(await send(f.url), 303);
+  assert.equal(await send(f.url), 400);
 });

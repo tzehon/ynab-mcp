@@ -403,3 +403,15 @@ sanitized, and credentials are checked with output canaries.
 Real-provider interoperability, actual Codex/ChatGPT connections, HTTPS hosting,
 Railway storage/costs, production key management and live budget reads remain
 separate milestones. Do not proxy or deploy either local mode.
+
+Browser consent checks preserve `Referrer-Policy: no-referrer`. Chromium form
+navigation can therefore send `Origin: null`; only cookie/CSRF-bound interaction
+and owner-control POSTs accept it with the full `Sec-Fetch-Site: same-origin`,
+`Sec-Fetch-Mode: navigate`, `Sec-Fetch-Dest: document` tuple. This exception never
+applies to MCP or token endpoints. The consent form permits only its configured
+mock-provider and registered callback origins in `form-action`; owner-control
+forms remain self-only. Browser flow bindings persist across pending tabs, while
+a separate owner-session cookie rotates on completed authorization. Binding
+cookies alone never authorize connection controls. HTTP regression tests cover
+both tabs completing, preselected-cookie rejection and hostile navigation headers;
+real Chromium consent, denial, refresh and disconnect were also manually verified.

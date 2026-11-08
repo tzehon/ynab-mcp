@@ -62,7 +62,7 @@ export function mockYnab({ port, callback, secret, owner, expires = 3600 }) {
           "Set-Cookie",
           `mock_ynab=${id}; HttpOnly; SameSite=Lax; Path=/`,
         );
-        res.writeHead(200, { "content-type": "text/html" });
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
         res.end(
           `<h1>Synthetic YNAB account — no real login</h1><form method="post" action="/oauth/authorize"><input name="csrf" value="${csrf}" type="hidden"><button name="decision" value="allow">Allow read-only</button><button name="decision" value="deny">Deny</button></form>`,
         );
@@ -88,7 +88,16 @@ export function mockYnab({ port, callback, secret, owner, expires = 3600 }) {
           if (form.getAll(k).length !== 1) throw Error();
       }
       if (u.pathname === "/oauth/authorize" && req.method === "POST") {
-        if (req.headers.origin !== origin) throw Error();
+        if (
+          req.headers.origin !== origin &&
+          !(
+            req.headers.origin === "null" &&
+            req.headers["sec-fetch-site"] === "same-origin" &&
+            req.headers["sec-fetch-mode"] === "navigate" &&
+            req.headers["sec-fetch-dest"] === "document"
+          )
+        )
+          throw Error();
         const id = (req.headers.cookie ?? "")
             .split(/;\s*/)
             .find((c) => c.startsWith("mock_ynab="))

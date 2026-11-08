@@ -22,6 +22,7 @@ import type { Config } from "./config.js";
 import { operationalLog } from "./errors.js";
 import { fixtureTransport } from "./fixtures/ynab.js";
 import { createFixtureHandler } from "./mcp.js";
+import { sameOriginForm } from "./oauth/browser-request.js";
 import { createOAuth } from "./oauth/provider.js";
 import { canonicalError } from "./tools/errors.js";
 import { MockYnabClient } from "./ynab/client.js";
@@ -183,7 +184,8 @@ export function createFixtureHttp(
         req.headers.host !== authority ||
         count("origin") > 1 ||
         (req.headers.origin !== undefined &&
-          req.headers.origin !== `http://${authority}`)
+          req.headers.origin !== `http://${authority}` &&
+          !(oauth && sameOriginForm(req)))
       ) {
         reply(res, 403, "LOCAL_ORIGIN_REQUIRED");
         return;

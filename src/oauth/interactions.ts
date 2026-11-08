@@ -1,17 +1,20 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { calculatePKCECodeChallenge } from "oauth4webapi";
 import type Provider from "oidc-provider";
+import { sameOriginForm } from "./browser-request.js";
 import type { OAuthConfig } from "./config.js";
 import { fail } from "./crypto.js";
 import { type Lifecycle, random } from "./lifecycle.js";
 import type { RecordValue, Store } from "./store.js";
 import type { Upstream } from "./upstream.js";
-export function securityHeaders(res: ServerResponse) {
+export function securityHeaders(
+  res: ServerResponse,
+  formOrigins: string[] = [],
+) {
   for (const [k, v] of Object.entries({
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",
-    "Content-Security-Policy":
-      "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
+    "Content-Security-Policy": `default-src 'none'; form-action 'self'${formOrigins.map((origin) => ` ${origin}`).join("")}; frame-ancestors 'none'; base-uri 'none'`,
     "X-Content-Type-Options": "nosniff",
   }))
     res.setHeader(k, v);
@@ -44,8 +47,8 @@ const escapeHtml = (s: string) =>
         c
       ] ?? c,
   );
-function html(res: ServerResponse, body: string) {
-  securityHeaders(res);
+function html(res: ServerResponse, body: string, formOrigins: string[] = []) {
+  securityHeaders(res, formOrigins);
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
   res.end(
     `<!doctype html><html lang="en"><meta charset="utf-8"><title>YNAB MCP local test</title><body><h1>YNAB MCP — synthetic test data</h1>${body}</body></html>`,
@@ -72,25 +75,26 @@ export class Interactions {
     private upstream: Upstream,
     private lifecycle: Lifecycle,
   ) {}
-  private cookie(req: IncomingMessage) {
+  private cookie(req: IncomingMessage, name = "oauth_local") {
     const cookies = (req.headers.cookie ?? "")
       .split(/;\s*/)
-      .filter((c) => c.startsWith("oauth_local="));
+      .filter((c) => c.startsWith(`${name}=`));
     if (cookies.length !== 1) return;
-    const v = cookies[0]?.slice(12) ?? "";
+    const v = cookies[0]?.slice(name.length + 1) ?? "";
     return /^[A-Za-z0-9_-]{43}$/.test(v) ? v : undefined;
   }
-  private setCookie(res: ServerResponse, id: string) {
+  private setCookie(res: ServerResponse, id: string, name = "oauth_local") {
     res.setHeader(
       "Set-Cookie",
-      `oauth_local=${id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600`,
+      `${name}=${id}; HttpOnly; SameSite=Lax; Path=/; Max-Age=3600`,
     );
   }
   private post(req: IncomingMessage) {
-    if (req.headers.origin !== this.config.origin) fail();
+    if (req.headers.origin !== this.config.origin && !sameOriginForm(req))
+      fail();
   }
   private session(req: IncomingMessage) {
-    const id = this.cookie(req);
+    const id = this.cookie(req, "oauth_owner");
     if (!id) fail();
     const s = this.store.get("OwnerSession", id);
     const c = this.lifecycle.current();
@@ -136,14 +140,16 @@ export class Interactions {
             this.store.now() + 3600000,
             { grantId },
           );
-          const browser = random();
+          const ownerSession = random(),
+            previous = this.cookie(req, "oauth_owner");
+          if (previous) this.store.remove("OwnerSession", previous);
           this.store.put(
             "OwnerSession",
-            browser,
+            ownerSession,
             { owner: this.config.owner, generation: c.generation },
             this.store.now() + 3600000,
           );
-          this.setCookie(res, browser);
+          this.setCookie(res, ownerSession, "oauth_owner");
           this.store.remove("Flow", detail.uid);
           this.store.remove("Completion", detail.uid);
           await this.provider.interactionFinished(
@@ -157,7 +163,11 @@ export class Interactions {
         const client = detail.params.client_id;
         if (!["synthetic-native", "synthetic-web"].includes(String(client)))
           fail();
-        const browser = this.cookie(req) ?? random(),
+        const candidate = this.cookie(req),
+          browser =
+            candidate && this.store.get("BrowserBinding", candidate)
+              ? candidate
+              : random(),
           flow: Flow = {
             uid: detail.uid,
             browser,
@@ -165,11 +175,25 @@ export class Interactions {
             client: String(client),
           };
         if (this.store.get("Flow", detail.uid)) fail();
+        this.store.put(
+          "BrowserBinding",
+          browser,
+          {},
+          this.store.now() + 3600000,
+        );
         this.store.put("Flow", detail.uid, flow, this.store.now() + 300000);
         this.setCookie(res, browser);
         html(
           res,
           `<p>Allow ${escapeHtml(flow.client)} to access ${escapeHtml(this.config.origin)}/mcp with read-only permission?</p><form method="post"><input type="hidden" name="csrf" value="${flow.csrf}"><button name="decision" value="continue">Continue with YNAB</button><button name="decision" value="deny">Deny</button></form>`,
+          [
+            this.config.upstream,
+            new URL(
+              flow.client === "synthetic-native"
+                ? this.config.nativeCallback
+                : this.config.webCallback,
+            ).origin,
+          ],
         );
         return true;
       }
@@ -274,7 +298,9 @@ export class Interactions {
         this.lifecycle.disconnect();
         res.setHeader(
           "Set-Cookie",
-          "oauth_local=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/",
+          ["oauth_local", "oauth_owner"].map(
+            (name) => `${name}=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/`,
+          ),
         );
       } else await this.lifecycle.refresh();
       securityHeaders(res);

@@ -271,7 +271,7 @@ Fill out `.github/pull_request_template.md`. Keep exactly one fenced
   `decisionUrl`. Use same-site attachment URLs and decision links to the same
   issue with `?focusedCommentId=<comment-id>`. Replace all placeholders.
 - `acceptanceCriteria`: exactly one entry each for `AC-1` through `AC-9` on YNAB-3.
-  The existing eight-entry contract remains for other issues. Each entry has `id`, a specific `check`, `status` and `evidence`.
+  YNAB-5 requires AC-1 through AC-11; the existing eight-entry contract remains for other issues. Each entry has `id`, a specific `check`, `status` and `evidence`.
   Status is `passed`, `failed` or `pending`; pending also requires `remaining`.
   Later issues with different AC sets require an explicit validator change. The
   issue-specific nine-entry rule accommodates the approved adapter contract; it
@@ -338,3 +338,68 @@ query for `(statusCategory = Done AND resolution IS EMPTY) OR
 (statusCategory != Done AND resolution IS NOT EMPTY)`. Missing fields/errors leave
 closure unverified; reopening must clear resolution and its date. Do not bulk-close
 unrelated issues. This is an agent check, not an authenticated CI assertion.
+
+## Integrated authorization with a mocked YNAB provider
+
+This local-only mode uses oidc-provider 9.13.3 and oauth4webapi 3.8.8. It adds an
+explicit client consent form, a synthetic YNAB authorization page, verified mock
+owner identity, and a separate MCP token. It does not connect to YNAB, Google,
+Auth0, Codex or ChatGPT accounts. Earlier fixture-token instructions above remain
+valid and describe that mode; these are its narrowly approved additional I/O paths.
+
+```sh
+npm ci --ignore-scripts
+npm run build
+npm run smoke:auth-integrated -- --mode start
+npm run smoke:auth-integrated -- --mode dev
+```
+
+The harness generates private synthetic keys in a temporary owner-only directory,
+starts the independent loopback mock, runs the actual start/dev process and
+submits the real consent forms for public-native and confidential-web clients.
+It exercises all five tools through both official SDK protocol eras and removes
+its temporary state. Only a fixed pass/fail line is printed by the command.
+
+For implementation tests, AUTH_MODE=integrated-mock requires the usual fixture
+flags, a literal loopback PORT and matching AUTH_ISSUER (origin without trailing
+slash), AUTH_AUDIENCE/MCP_PUBLIC_URL (origin plus /mcp), synthetic owner UUID,
+MOCK_YNAB_ORIGIN (separate loopback origin with trailing slash), exact
+OAUTH_NATIVE_CALLBACK/OAUTH_WEB_CALLBACK, OAUTH_STATE_DIR, OAUTH_KEY_FILE,
+OAUTH_WEB_SECRET and MOCK_YNAB_SECRET. Synthetic secrets have the prefix
+synthetic- and 64 hexadecimal characters; use the harness instead of inventing
+real deployment settings. DEBUG, production/live/PAT configuration and public
+origins are refused. A fixture plan allowlist remains mandatory for useful tools;
+an empty one grants no plan access.
+
+Keys and the SQLite directory are separate and owner-only. Application state is
+AES-256-GCM encrypted before entering SQLite/WAL; operational expiry/model,
+consumption flags and keyed lookup identifiers remain visible. The database is
+schema-versioned, limited to 1,000 records/64 KiB payloads and a 32 MiB storage
+budget with admission reserve. SQLite uses local WAL/FULL durability. A wrong
+key, corrupt schema/payload, store failure or missing private directory fails
+closed. The application never invents replacement keys or falls back to memory.
+Keep the same temporary keys for restart tests. Do not restore old grants or
+backups to work around an error; terminate the harness and generate a fresh
+synthetic setup. Signing rotation tests retain old/new public keys for overlap;
+production key custody and storage-key rotation are future work.
+
+Every client authorization requires explicit consent; upstream state and PKCE
+are separate from the MCP client leg. Callback processing returns to the
+engine's interaction path so its path-scoped cookie remains effective. The
+connection page offers CSRF-protected refresh and disconnect. Refresh is
+serialized; ambiguous exchange/crash requires reconnect. Disconnect invalidates
+stored downstream grants, so even an unexpired signed MCP token fails on the next
+request. Local deletion does not claim provider-side revocation. MCP tokens last
+at most one hour and have no refresh token in this slice. Fixture tools never
+use the stored upstream grant or make token/user/budget requests.
+
+The integrated audit preload intercepts native SQLite imports as well as
+JavaScript I/O, blocks unapproved database paths and ATTACH, and verifies exact
+mock endpoints. This is trusted-code regression instrumentation, not a security
+sandbox for malicious packages. The engine may print a fixed notice about the
+bounded upstream form parser; raw request/error/debug logging is disabled or
+sanitized, and credentials are checked with output canaries.
+
+Real-provider interoperability, actual Codex/ChatGPT connections, HTTPS hosting,
+Railway storage/costs, production key management and live budget reads remain
+separate milestones. Do not proxy or deploy either local mode.

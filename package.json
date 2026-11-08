@@ -18,18 +18,22 @@
     "start": "node dist/main.js",
     "dev": "npm run build && node dist/main.js",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
-    "smoke:auth-fixtures": "node scripts/auth-fixture-smoke.mjs"
+    "smoke:auth-fixtures": "node scripts/auth-fixture-smoke.mjs",
+    "smoke:auth-integrated": "node scripts/integrated-auth-smoke.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",
     "@modelcontextprotocol/server": "2.4.0",
     "jose": "6.2.15",
+    "oauth4webapi": "3.8.8",
+    "oidc-provider": "9.13.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
     "@modelcontextprotocol/client": "2.4.0",
     "@types/node": "26.6.6",
+    "@types/oidc-provider": "9.13.1",
     "typescript": "7.0.2"
   }
 }

@@ -1,30 +1,31 @@
 import { createServer, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import { toNodeHandler } from "@modelcontextprotocol/node";
-import type { Config } from "./config.js";
-import { createFixtureHandler } from "./mcp.js";
-import { MockYnabClient } from "./ynab/client.js";
-import { fixtureTransport } from "./fixtures/ynab.js";
-import type { MockTransport } from "./ynab/transport.js";
-import { canonicalError } from "./tools/errors.js";
-import { operationalLog } from "./errors.js";
-import { Authenticator } from "./auth/verifier.js";
-import { authResponse } from "./auth/http-auth.js";
-import { AuthError } from "./auth/errors.js";
-import { loadBundle } from "./auth/fixture-bundle.js";
-import {
-  fixtureTransport as authFixtureTransport,
-  type AuthTransport,
-} from "./auth/contracts.js";
 import {
   buildOAuthProtectedResourceMetadata,
   getOAuthProtectedResourceMetadataUrl,
 } from "@modelcontextprotocol/server";
 import {
-  requestContext,
+  type AuthTransport,
+  fixtureTransport as authFixtureTransport,
+} from "./auth/contracts.js";
+import { AuthError } from "./auth/errors.js";
+import { loadBundle } from "./auth/fixture-bundle.js";
+import { authResponse } from "./auth/http-auth.js";
+import {
   newRequestContext,
+  requestContext,
   requestLog,
 } from "./auth/request-context.js";
+import { Authenticator } from "./auth/verifier.js";
+import type { Config } from "./config.js";
+import { operationalLog } from "./errors.js";
+import { fixtureTransport } from "./fixtures/ynab.js";
+import { createFixtureHandler } from "./mcp.js";
+import { createOAuth } from "./oauth/provider.js";
+import { canonicalError } from "./tools/errors.js";
+import { MockYnabClient } from "./ynab/client.js";
+import type { MockTransport } from "./ynab/transport.js";
 
 function reply(res: ServerResponse, status: number, code: string) {
   res.writeHead(status, {
@@ -75,9 +76,18 @@ export function createFixtureHttp(
   authTransport?: AuthTransport,
   observeProtocol: (request: Request) => void = () => {},
 ) {
+  const oauth = config.oauth ? createOAuth(config.oauth) : undefined;
   const auth = new Authenticator(
     config.auth,
-    authTransport ?? authFixtureTransport(loadBundle(config.auth.fixtureFile)),
+    authTransport ??
+      (oauth
+        ? async () => {
+            throw new AuthError("invalid");
+          }
+        : authFixtureTransport(loadBundle(config.auth.fixtureFile))),
+    undefined,
+    undefined,
+    oauth?.verification,
   );
   const metadataUrl = getOAuthProtectedResourceMetadataUrl(
     new URL(config.auth.audience),
@@ -89,8 +99,12 @@ export function createFixtureHttp(
       scopesSupported: ["ynab:read"],
       oauthMetadata: {
         issuer: config.auth.issuer,
-        authorization_endpoint: `${config.auth.issuer}authorize`,
-        token_endpoint: `${config.auth.issuer}oauth/token`,
+        authorization_endpoint: oauth
+          ? `${config.auth.issuer}/auth`
+          : `${config.auth.issuer}authorize`,
+        token_endpoint: oauth
+          ? `${config.auth.issuer}/token`
+          : `${config.auth.issuer}oauth/token`,
         response_types_supported: ["code"],
       },
     }),
@@ -172,6 +186,23 @@ export function createFixtureHttp(
           req.headers.origin !== `http://${authority}`)
       ) {
         reply(res, 403, "LOCAL_ORIGIN_REQUIRED");
+        return;
+      }
+      if (
+        oauth &&
+        req.url !== metadataPath &&
+        req.url !== "/healthz" &&
+        req.url !== "/mcp"
+      ) {
+        if (
+          Object.keys(req.headers).some(
+            (k) => k.startsWith("x-forwarded-") || k === "forwarded",
+          )
+        ) {
+          reply(res, 403, "LOCAL_ORIGIN_REQUIRED");
+          return;
+        }
+        void oauth.handle(req, res);
         return;
       }
       if (req.url === metadataPath) {
@@ -278,6 +309,7 @@ export function createFixtureHttp(
         socket.destroy();
       }
       await Promise.all([handler.close(), closed]);
+      await oauth?.close();
     },
   };
 }

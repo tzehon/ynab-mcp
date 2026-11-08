@@ -1,11 +1,15 @@
-import { tokenFor, sign, owner } from "./helpers/auth.mjs";
-import { authorizedFetch as fetch } from "./helpers/auth.mjs";
-import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
-import { launch, unusedPort } from "./helpers/process.mjs";
+import { readdirSync, readFileSync } from "node:fs";
+import test from "node:test";
 import { runSmoke as baseRunSmoke } from "../scripts/smoke-mcp.mjs";
+import {
+  authorizedFetch as fetch,
+  owner,
+  sign,
+  tokenFor,
+} from "./helpers/auth.mjs";
+import { launch, unusedPort } from "./helpers/process.mjs";
 
 test("runtime guard detects network, persistent writes and subprocess attempts", () => {
   for (const script of [
@@ -88,11 +92,14 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
   for (const path of paths) {
     const source = readFileSync(`src/${path}`, "utf8");
     assert.doesNotMatch(
-      path === "auth/fixture-bundle.ts"
+      ["auth/fixture-bundle.ts", "oauth/keys.ts", "oauth/store.ts"].includes(
+        path,
+      )
         ? source.replaceAll("node:fs", "approved-read-loader")
         : source,
       /node:(?:fs|https|dns|dgram|child_process)|\beval\s*\(|\bnew Function\b/,
     );
+    if (path !== "oauth/store.ts") assert.doesNotMatch(source, /node:sqlite/);
     assert.doesNotMatch(
       source,
       /YNAB_ACCESS_TOKEN\s*[=:]|\bhttps?\.(?:request|get)\s*\(/,

@@ -1,14 +1,16 @@
+import { type AuthConfig, authConfig } from "./auth/config.js";
+import { ConfigError } from "./errors.js";
+import { fixturePlans, type Plan, validateCatalog } from "./fixtures/plans.js";
 import {
+  type FixtureMap,
   fixtureMap,
   validateFixtureMap,
-  type FixtureMap,
 } from "./fixtures/ynab.js";
-import { ConfigError } from "./errors.js";
-import { authConfig, type AuthConfig } from "./auth/config.js";
-import { fixturePlans, validateCatalog, type Plan } from "./fixtures/plans.js";
+import { type OAuthConfig, oauthConfig } from "./oauth/config.js";
 
 export type Config = Readonly<{
   auth: AuthConfig;
+  oauth?: OAuthConfig;
   host: "127.0.0.1";
   port: number;
   allowedIds: readonly string[];
@@ -38,6 +40,15 @@ export function parseConfig(
     Number(portText) > 65535
   )
     throw new ConfigError("PORT");
+  if (
+    env.AUTH_MODE &&
+    !["fixture-token", "integrated-mock"].includes(env.AUTH_MODE)
+  )
+    throw new ConfigError("AUTH_MODE");
+  const oauth =
+    env.AUTH_MODE === "integrated-mock"
+      ? oauthConfig(env, Number(portText))
+      : undefined;
   const plans = validateCatalog(catalog);
   let allowed: unknown;
   try {
@@ -57,7 +68,15 @@ export function parseConfig(
   )
     throw new ConfigError("FIXTURE_ALLOWED_PLAN_IDS");
   return Object.freeze({
-    auth: authConfig(env, Number(portText)),
+    auth: oauth
+      ? {
+          issuer: oauth.origin,
+          audience: `${oauth.origin}/mcp`,
+          subject: oauth.owner,
+          fixtureFile: "",
+        }
+      : authConfig(env, Number(portText)),
+    oauth,
     host: "127.0.0.1",
     port: Number(portText),
     allowedIds: Object.freeze([...allowed] as string[]),

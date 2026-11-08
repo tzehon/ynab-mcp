@@ -1,5 +1,5 @@
-import { decodeProtectedHeader, jwtVerify } from "jose";
 import { verifyBearerToken } from "@modelcontextprotocol/server";
+import { decodeProtectedHeader, jwtVerify } from "jose";
 import type { AuthConfig } from "./config.js";
 import type { AuthTransport } from "./contracts.js";
 import { AuthError, invalid } from "./errors.js";
@@ -9,7 +9,7 @@ import { abortable, KeyStore } from "./key-store.js";
 let activeAuthentications = 0;
 
 export class Authenticator {
-  private readonly keys: KeyStore;
+  private readonly keys: Pick<KeyStore, "resolve" | "close">;
   private readonly controllers = new Set<AbortController>();
   private closed = false;
   constructor(
@@ -17,9 +17,15 @@ export class Authenticator {
     transport: AuthTransport,
     now?: () => number,
     private readonly date = () => new Date(),
+    integrated?: {
+      keys: Pick<KeyStore, "resolve" | "close">;
+      grant: (claims: Record<string, unknown>) => void;
+    },
   ) {
-    this.keys = new KeyStore(transport, now);
+    this.keys = integrated?.keys ?? new KeyStore(transport, now);
+    this.grant = integrated?.grant;
   }
+  private readonly grant?: (claims: Record<string, unknown>) => void;
   async authenticate(
     header: string | undefined,
     signal: AbortSignal,
@@ -121,6 +127,7 @@ export class Authenticator {
                   ? p.scope.split(" ").filter(Boolean)
                   : [];
               if (!scopes.includes("ynab:read")) throw new AuthError("scope");
+              this.grant?.(p);
               // SDK's transient token-bearing value never leaves this auth boundary.
               return {
                 token,

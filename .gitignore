@@ -6,3 +6,7 @@ node_modules/
 *.log
 dist/
 !.env.example
+
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

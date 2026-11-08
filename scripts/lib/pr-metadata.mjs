@@ -22,7 +22,7 @@ export function validateMetadata({ title, body, jiraBaseUrl, commits } = {}) {
   const keys = typeof title === 'string' ? title.match(/YNAB-[0-9]+/g) : null;
   const issueKey = match ? `YNAB-${match[1]}` : null;
   // Explicit approved issue contract; future changes require review.
-  const acCount = issueKey === 'YNAB-3' ? 9 : 8;
+  const acCount = issueKey === 'YNAB-5' ? 11 : issueKey === 'YNAB-3' ? 9 : 8;
   const acIds = Array.from({ length: acCount }, (_, i) => `AC-${i + 1}`);
   if (!match || !meaningful(match[2]) || keys?.length !== 1)
     error('TITLE', 'Use YNAB-<positive integer>: <summary>, with exactly one primary key and one line.');

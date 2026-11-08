@@ -61,7 +61,7 @@ is needed for fixture operation. Do not create YNAB/Auth0/Railway resources for 
 New read tools use only the required injected mock transport. Preserve strict
 schemas, pre-dispatch allowlisting, exact safe integer milliunits, synthetic currency
 and timestamp context, nested splits, metadata-only categories and truthful
-truncation. No inferred totals, retries, live fallback or persistent state. Keep the
+truncation. No inferred totals, retries, live fallback or persistent budget state. Keep the
 four-call process budget, three-second deadline, raw/output caps and canonical
 fixed errors. Smoke requires at least one allowed built-in plan and exercises all
 five tools without logging their data.
@@ -80,3 +80,21 @@ Only auth/fixture-bundle.ts may read the bounded public bundle; the application
 must still perform zero persistent writes, outbound calls or subprocess creation.
 The test harness may orchestrate children/create public scratch outside the guarded
 application. Preserve positive controls for every runtime-guard exception.
+
+YNAB-5 integrated-mock mode is a separately approved local-only exception:
+AUTH_MODE=integrated-mock permits exact mock-loopback OAuth/user control calls
+and encrypted SQLite state under OAUTH_STATE_DIR, plus the bounded separate
+OAUTH_KEY_FILE. The existing fixture-token mode retains its previous zero-write,
+zero-outbound rules. Only oauth/store.ts accesses SQLite, oauth/keys.ts reads
+private synthetic keys, and oauth/upstream.ts sends mock control traffic. Preserve
+negative controls for native SQLite imports/ATTACH as well as JS fs/network.
+The guards instrument trusted code; they are not malicious-dependency sandboxes.
+
+Use npm run smoke:auth-integrated -- --mode start (or dev) for disposable local
+consent/code/PKCE, both client profiles and both SDK eras. It creates only invented
+identities and temporary keys/state and cleans them up. Never deploy this mode,
+copy real credentials into it, enable DEBUG, or substitute auto-consent. Tests must
+prove encrypted persistence, single-use code/state, owner binding, refresh races,
+reconnect, disconnect invalidation and no secret logging. No MCP refresh tokens
+are issued in this slice; upstream refresh is independent. Full plan/AC evidence
+and separate owner merge authorization are still required.

@@ -1,0 +1,37 @@
+src/oauth/browser-request.ts
+  s_1d643f41a6b8a6::t_ceed151365aa69 1-18
+src/http.ts
+  s_1d643f41a6b8a6::t_ceed151365aa69 25,187-188
+test/oauth-interactions.test.mjs
+  s_eb80e8fdbdac14::t_dac69430fa3cfe 36,65-73,171-243
+  s_1d643f41a6b8a6::t_ceed151365aa69 244-298
+scripts/lib/mock-ynab-provider.mjs
+  s_eb80e8fdbdac14::t_887de23bbf712e 65,91-100
+src/oauth/interactions.ts
+  s_1d643f41a6b8a6::t_ceed151365aa69 4,93-94
+  s_eb80e8fdbdac14::t_dac69430fa3cfe 10-13,17,50-51,78,81,83,86,89,97,143-145,148,152,166-170,178-183,189-196,301-303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5515f5f4809bf69550bfcf1d0ee68480fc27676a",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    },
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

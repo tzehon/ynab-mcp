@@ -1,3 +1,4 @@
+import { requestLog } from "./auth/request-context.js";
 import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import type { MockYnabClient } from "./ynab/client.js";
 import * as accounts from "./tools/list-accounts.js";
@@ -30,6 +31,7 @@ export function createFixtureHandler(config: Config, client: MockYnabClient) {
           },
         },
         async () => {
+          requestLog("tool", 200, "ynab_list_plans");
           const output = listPlans(config);
           return {
             structuredContent: output,
@@ -57,6 +59,8 @@ export function createFixtureHandler(config: Config, client: MockYnabClient) {
             return await accounts.listAccounts(client, args, ctx.mcpReq.signal);
           } catch (e) {
             return errorResult(e);
+          } finally {
+            requestLog("tool", 200, "ynab_list_accounts");
           }
         },
       );
@@ -74,6 +78,8 @@ export function createFixtureHandler(config: Config, client: MockYnabClient) {
             return await month.getMonth(client, args, ctx.mcpReq.signal);
           } catch (e) {
             return errorResult(e);
+          } finally {
+            requestLog("tool", 200, "ynab_get_month");
           }
         },
       );
@@ -95,6 +101,8 @@ export function createFixtureHandler(config: Config, client: MockYnabClient) {
             );
           } catch (e) {
             return errorResult(e);
+          } finally {
+            requestLog("tool", 200, "ynab_list_categories");
           }
         },
       );
@@ -116,6 +124,8 @@ export function createFixtureHandler(config: Config, client: MockYnabClient) {
             );
           } catch (e) {
             return errorResult(e);
+          } finally {
+            requestLog("tool", 200, "ynab_list_transactions");
           }
         },
       );

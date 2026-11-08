@@ -43,40 +43,66 @@ checks; it does not establish a second machine's MCP connection.
 
 ## Run the local fixture server
 
-After installing dependencies, use these explicit settings in one terminal:
+After installing dependencies, run the self-contained authenticated test harness:
+
+```sh
+npm run build
+npm run smoke:auth-fixtures -- --mode start
+npm run smoke:auth-fixtures -- --mode dev
+```
+
+Each run generates disposable RSA keys in memory, writes only a public fixture
+bundle to temporary scratch, starts the protected service, exercises all five
+tools in both protocol eras and missing/expired/wrong-owner rejection, then shuts
+down and cleans up. It prints only fixed success/failure labels. This is a local
+mock test, not Auth0 login or actual Codex/ChatGPT acceptance.
+
+**Migration:** the previous anonymous start/dev commands now fail closed. For
+manual protected operation, provide every setting explicitly (synthetic values
+only):
 
 ```sh
 LOCAL_FIXTURE_MODE=true DATA_MODE=fixtures NODE_ENV=development \
   HOST=127.0.0.1 PORT=3000 \
+  AUTH_ISSUER=https://issuer.example.test/ \
+  AUTH_AUDIENCE=http://127.0.0.1:3000/mcp \
+  MCP_PUBLIC_URL=http://127.0.0.1:3000/mcp \
+  AUTH_ALLOWED_SUBJECT=synthetic-owner \
+  AUTH_FIXTURE_FILE=/absolute/private/scratch/public.json \
   FIXTURE_ALLOWED_PLAN_IDS='["fixture-plan-sgd","fixture-plan-usd"]' npm run dev
 ```
 
-`dev` builds TypeScript and starts the compiled program; it is not a file watcher.
-For a separate build/start workflow, run `npm run build`, then use the same
-environment prefix with `npm start`. `.env.example` is a reference; no command
-automatically loads `.env`. Stop with Ctrl-C (SIGINT); SIGTERM is also supported.
+The bundle is a regular, nonsymlink JSON file at most 65536 bytes with exactly
+`discovery` and `jwks` objects. Discovery has exact issuer and
+`https://issuer.example.test/.well-known/jwks.json`, same-origin HTTPS
+`authorization_endpoint`/`token_endpoint`, `response_types_supported: ["code"]`
+and `code_challenge_methods_supported: ["S256"]`. JWKS has 1–8 unique public RSA
+signing keys (`kid`, `kty: RSA`, `alg: RS256`, `use: sig`, 2048–4096-bit `n`, `e`;
+optional verification-only `key_ops`). No private/symmetric key fields are
+accepted. It is read once, before listening; mock retrieval never contacts these
+URLs. Private test keys stay in your test harness, never in this bundle/server.
+The reproducible commands above prepare this material automatically.
 
-In a second terminal:
+`dev` builds and starts, without a watcher. `start` uses a prior build. `.env`
+is never loaded automatically. Both opt-in flags are mandatory; live mode,
+production/unknown NODE_ENV, non-loopback HOST and nonempty YNAB_ACCESS_TOKEN fail.
+PORT is 1–65535 (default 3000); both resource settings must match its exact URL.
+Issuer is the fixed test issuer, and the explicit owner subject has no default.
 
-```sh
-curl --fail http://127.0.0.1:3000/healthz
-npm run smoke:mcp -- --url http://127.0.0.1:3000/mcp
-```
+GET/HEAD `/healthz` is public. The challenge from an unauthenticated `/mcp`
+request identifies `/.well-known/oauth-protected-resource/mcp`, also public.
+Every MCP request needs a signed RS256 RFC 9068 access token (`typ: at+jwt` or
+`application/at+jwt`) with exact issuer/resource/owner and `ynab:read`. Signature,
+claim types, expiry/not-before/issued-at and token type are checked on every call,
+with zero clock tolerance. ID tokens and generic JWTs are not accepted. Later
+Auth0 setup must configure and independently verify the selected profile.
 
-Health returns `{"status":"ok","data_mode":"fixtures"}`. Smoke prints a pass for
-each protocol era after checking all five tools, without dumping data. It uses the official SDK client, tests
-discovery/list/call and schema validation, rejects redirects and any noncanonical
-loopback URL, and bounds each HTTP operation to 5 seconds and the run to 20 seconds.
-Allowlist at least one built-in plan for smoke (SGD is preferred, otherwise USD).
-Smoke reads the synthetic November 2026 month/window. Deny-all is valid server
-configuration, but smoke deliberately fails because it cannot exercise all tools.
-A failed check exits nonzero with a generic diagnostic.
-
-Both opt-in flags are required. `HOST` must be absent or literally `127.0.0.1`;
-`PORT` defaults to 3000 and must be a decimal integer from 1 to 65535. `NODE_ENV`
-may be absent, `development` or `test`. Production/unknown environments, live data
-mode and a nonempty `YNAB_ACCESS_TOKEN` all fail before listening. These checks also
-apply to `dev` and `start`; neither command silently enables fixture mode.
+`smoke:mcp -- --url http://127.0.0.1:3000/mcp` reads one bounded synthetic token
+from stdin; never put it in command arguments or logged environment variables.
+The harness pipes it privately. Smoke requires at least one built-in allowed
+plan, checks all five tools in both protocol eras, and emits no financial data.
+It limits HTTP operations to 5 seconds and the run to 20 seconds. No application
+endpoint mints tokens. Stop the manual service with Ctrl-C or SIGTERM.
 
 The allowlist is a JSON array of unique known fixture IDs. Missing or `[]` returns
 no plans; malformed, duplicate or unknown IDs reject startup. The two built-in
@@ -88,11 +114,11 @@ tool; schema validation and server behavior enforce its boundaries.
 
 Only an exact `Host: 127.0.0.1:<port>` is accepted. Origin must be absent or exactly
 `http://127.0.0.1:<port>`; proxy headers do not override these checks. The server
-provides no authentication or CORS access. Do not expose it through a proxy,
-tunnel, container public port or hosting service. Local programs can still access
-it; its data is deliberately synthetic.
+enforces local mock authentication and provides no cross-origin access. Do not
+expose this test-key service through a proxy, tunnel, public container port or
+hosting service; real provider/hosted authorization is a later milestone.
 
-`POST /mcp` returns JSON using stateless requests. GET/DELETE on `/mcp` return 405;
+`POST /mcp` returns JSON using stateless requests. Authenticated GET/DELETE on `/mcp` return 405;
 there are no persistent SSE subscriptions. Legacy SDK initialization uses protocol
 2025-11-25; modern SDK discovery uses 2026-07-28. Tests and smoke exercise both and
 compare normalized logical results. SDK 2.4's stateless legacy handler emits a
@@ -104,7 +130,14 @@ none. This interoperability evidence is not a real Codex/ChatGPT connection test
 Bodies are limited to 65,536 bytes (larger bodies return 413). Every connection
 closes after its response and has a 10-second total deadline, including incomplete
 headers/bodies. Shutdown closes sockets and resources within 5 seconds. Diagnostics
-contain fixed codes and the listening port, not request bodies, headers or secrets.
+contain fixed codes, server-generated request IDs, status/duration and registered
+tool names after authorization, not bodies, raw headers/URLs, claims or secrets.
+Missing/invalid access returns 401, wrong owner or insufficient scope returns 403.
+Auth overload/deadline returns 503. Four auth operations and one shared key refresh
+are bounded to 2 seconds with no admission queue. Key freshness is at most 60
+seconds; unknown-key refresh has a global 5-second cooldown. Removed keys cease
+working after refresh/expiry; this is not instant revocation. No stale-on-error
+fallback, token cache, persistent cache or outbound auth retrieval exists.
 
 ## Mock read tools
 

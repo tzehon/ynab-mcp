@@ -1,19 +1,13 @@
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import net from "node:net";
 import { fixtureEnv } from "./server.mjs";
-export async function unusedPort() {
-  const s = net.createServer();
-  await new Promise((r) => s.listen(0, "127.0.0.1", r));
-  const port = s.address().port;
-  await new Promise((r) => s.close(r));
-  return port;
-}
+import { portEnv } from './auth.mjs';
+export { unusedPort } from './auth.mjs';
 export function launch(port, extra = {}, args = ["dist/main.js"]) {
   const env = {
     PATH: process.env.PATH,
     ...fixtureEnv,
-    PORT: String(port),
+    ...portEnv(port),
     ...extra,
   };
   for (const [k, v] of Object.entries(env)) if (v === undefined) delete env[k];

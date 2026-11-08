@@ -4,9 +4,11 @@ import {
   type FixtureMap,
 } from "./fixtures/ynab.js";
 import { ConfigError } from "./errors.js";
+import { authConfig, type AuthConfig } from "./auth/config.js";
 import { fixturePlans, validateCatalog, type Plan } from "./fixtures/plans.js";
 
 export type Config = Readonly<{
+  auth: AuthConfig;
   host: "127.0.0.1";
   port: number;
   allowedIds: readonly string[];
@@ -55,6 +57,7 @@ export function parseConfig(
   )
     throw new ConfigError("FIXTURE_ALLOWED_PLAN_IDS");
   return Object.freeze({
+    auth: authConfig(env, Number(portText)),
     host: "127.0.0.1",
     port: Number(portText),
     allowedIds: Object.freeze([...allowed] as string[]),

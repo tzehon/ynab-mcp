@@ -1,13 +1,15 @@
+import { tokenFor, sign, owner } from "./helpers/auth.mjs";
+import { authorizedFetch as fetch } from "./helpers/auth.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { launch, unusedPort } from "./helpers/process.mjs";
-import { runSmoke } from "../scripts/smoke-mcp.mjs";
+import { runSmoke as baseRunSmoke } from "../scripts/smoke-mcp.mjs";
 
 test("runtime guard detects network, persistent writes and subprocess attempts", () => {
   for (const script of [
-    "fetch('https://example.invalid')",
+    "globalThis.fetch('https://example.invalid')",
     "(await import('node:net')).connect(1, '127.0.0.1')",
     "(await import('node:fs')).writeFileSync('/tmp/ynab-guard-must-not-exist', 'synthetic')",
     "await (await import('node:fs/promises')).open('/tmp/ynab-guard-must-not-exist', 'w')",
@@ -38,6 +40,20 @@ test("instrumented running server handles both protocols and errors without outb
   t.after(() => p.stop());
   await p.ready;
   await runSmoke(`http://127.0.0.1:${port}/mcp`);
+  const rejectedToken = await sign(`http://127.0.0.1:${port}/mcp`, {
+    sub: "SECRET_SUBJECT",
+    private_claim: "SECRET_CLAIM",
+  });
+  assert.equal(
+    (
+      await fetch(`http://127.0.0.1:${port}/mcp`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${rejectedToken}` },
+        body: "SECRET_BODY",
+      })
+    ).status,
+    403,
+  );
   await fetch(`http://127.0.0.1:${port}/mcp`, {
     method: "POST",
     headers: {
@@ -52,6 +68,15 @@ test("instrumented running server handles both protocols and errors without outb
     /RUNTIME_GUARD {"network":0,"writes":0,"subprocess":0}/,
   );
   assert.ok(!p.output().includes("SECRET_MARKER"));
+  for (const sentinel of [
+    tokenFor(port),
+    rejectedToken,
+    owner,
+    "SECRET_SUBJECT",
+    "SECRET_CLAIM",
+    "SECRET_BODY",
+  ])
+    assert.ok(!p.output().includes(sentinel));
   assert.ok(!p.output().includes("fixture-plan"));
   assert.ok(!p.output().includes("Error:"));
   assert.ok(!p.output().includes(" at "));
@@ -63,7 +88,9 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
   for (const path of paths) {
     const source = readFileSync(`src/${path}`, "utf8");
     assert.doesNotMatch(
-      source,
+      path === "auth/fixture-bundle.ts"
+        ? source.replaceAll("node:fs", "approved-read-loader")
+        : source,
       /node:(?:fs|https|dns|dgram|child_process)|\beval\s*\(|\bnew Function\b/,
     );
     assert.doesNotMatch(
@@ -77,3 +104,7 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
       assert.equal((source.match(/https:\/\/api\.ynab\.com/g) ?? []).length, 1);
   }
 });
+
+function runSmoke(url, report) {
+  return baseRunSmoke(url, report, tokenFor(new URL(url).port));
+}

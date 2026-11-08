@@ -19,7 +19,8 @@ export function parseTarget(value) {
     throw new Error("INVALID_SMOKE_TARGET");
   return new URL(value);
 }
-export async function runSmoke(value, report = () => {}) {
+export async function runSmoke(value, report = () => {}, token) {
+  if (typeof token !== "string" || !token || Buffer.byteLength(token) > 8192 || /\s/.test(token)) throw new Error("INVALID_SMOKE_TOKEN");
   const url = parseTarget(value);
   const whole = AbortSignal.timeout(20000);
   const requestOptions = {
@@ -43,6 +44,7 @@ export async function runSmoke(value, report = () => {}) {
         // URL normalizes explicit :80 away, but the local server deliberately
         // requires the exact authority including its listening port.
         const headers = new Headers(init.headers);
+        headers.set("Authorization", `Bearer ${token}`);
         headers.set("Host", `127.0.0.1:${url.port || "80"}`);
         return fetch(input, {
           ...init,
@@ -128,9 +130,13 @@ if (
   try {
     if (process.argv.length !== 4 || process.argv[2] !== "--url")
       throw new Error("INVALID_ARGUMENTS");
-    await runSmoke(process.argv[3], (era) =>
-      console.log(`MCP_SMOKE_PASS ${era}`),
-    );
+    let input = "";
+    for await (const chunk of process.stdin) {
+      input += chunk.toString();
+      if (Buffer.byteLength(input) > 8193) throw new Error("INVALID_SMOKE_TOKEN");
+    }
+    const token = input.endsWith("\n") ? input.slice(0, -1) : input;
+    await runSmoke(process.argv[3], (era) => console.log(`MCP_SMOKE_PASS ${era}`), token);
   } catch {
     console.error("MCP_SMOKE_FAILED");
     process.exitCode = 1;

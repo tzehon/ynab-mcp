@@ -1,3 +1,4 @@
+import { tokenFor, sign } from "./helpers/auth.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
@@ -9,8 +10,9 @@ import { unusedPort } from "./helpers/process.mjs";
 
 async function cli(url) {
   const p = spawn(process.execPath, ["scripts/smoke-mcp.mjs", "--url", url], {
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["pipe", "pipe", "pipe"],
   });
+  p.stdin.end((tokenFor(new URL(url).port) ?? await sign(url)) + "\n");
   let output = "";
   p.stdout.on("data", (x) => (output += x));
   p.stderr.on("data", (x) => (output += x));
@@ -62,7 +64,7 @@ test("smoke retains explicit port 80 in Host after URL normalization", async (t)
     return realFetch(app.url, { ...init, headers });
   };
   const eras = [];
-  await runSmoke("http://127.0.0.1:80/mcp", (era) => eras.push(era));
+  await runSmoke("http://127.0.0.1:80/mcp", (era) => eras.push(era), tokenFor(app.port));
   assert.deepEqual(eras, ["legacy", "modern"]);
   assert.ok(requests >= 7);
 });

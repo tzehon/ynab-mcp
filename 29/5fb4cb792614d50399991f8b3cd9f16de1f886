@@ -1,0 +1,23 @@
+scripts/lib/mock-ynab-provider.mjs
+  s_eb80e8fdbdac14::t_e527441db1464d 10,58-65,68,72,76,110-115,117-123
+test/helpers/integrated-auth.mjs
+  s_eb80e8fdbdac14::t_b64fe779ec4f90 60-66
+test/oauth-interactions.test.mjs
+  s_eb80e8fdbdac14::t_3a3f2dde934d77 299-343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "295fb4cb792614d50399991f8b3cd9f16de1f886",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

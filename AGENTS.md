@@ -30,16 +30,19 @@ Available commands (Node 26.13.0 / npm 11.20.0):
 - `npm run build` / `npm start`: compile to ignored dist, then run compiled code.
 - `npm run dev`: build then start; no watcher and no hidden environment defaults.
 - `npm run smoke:mcp -- --url http://127.0.0.1:3000/mcp`: both official SDK eras;
-  requires a build and separately running fixture server. No plan data in output.
+  requires a build, protected fixture server and synthetic token on stdin. No plan data in output.
+- `npm run smoke:auth-fixtures -- --mode start` (or `dev`): disposable authenticated
+  harness; private keys stay in memory, public-only bundle cleaned after use.
 - `npm run check:pr -- --event <path>`: validate a PR event with full Git history;
   requires trusted `JIRA_BASE_URL` in the environment. See README for offline fixtures.
 
-Runtime dependencies: server/client SDK 2.4.0, Node adapter 2.1.2 and Zod 4.6.7;
+Runtime dependencies: jose 6.2.15, server/client SDK 2.4.0, Node adapter 2.1.2 and Zod 4.6.7;
 tooling: TypeScript 7.0.2, Node types 26.6.6, Biome 2.6.6. See README for settings.
 Both LOCAL_FIXTURE_MODE=true and DATA_MODE=fixtures are mandatory. Bind literally
 127.0.0.1; production/live configuration and a nonempty YNAB_ACCESS_TOKEN fail.
-Missing/empty allowlist denies all plans. Never expose this unauthenticated fixture
-server through a proxy, tunnel or hosting service. No deployment command exists.
+Missing/empty allowlist denies all plans. Explicit auth configuration/public fixture
+bundle is mandatory; anonymous start/dev now fails. See README for all settings.
+Never expose this local test-key fixture server through a proxy, tunnel or hosting service. No deployment command exists.
 All five tools are read-only; test legacy initialize and modern discovery over
 real HTTP. SDK interoperability does not prove actual Codex/ChatGPT connectivity.
 
@@ -69,3 +72,11 @@ ID, populated resolutiondate. At resume and after closure/reopening, paginate th
 project query for Done-with-empty-resolution or non-Done-with-resolution. Missing
 fields/errors do not pass. Reopening must clear resolution and date. Preserve
 unrelated work; do not bulk-close issues. These are manual agent checks, not CI.
+
+Authentication uses required injected mock discovery/JWKS only, with bounded
+refresh/admission and exact owner/resource/type checks. No remote resolver or
+fallback. Keep raw Authorization and SDK AuthInfo out of protocol/tool context.
+Only auth/fixture-bundle.ts may read the bounded public bundle; the application
+must still perform zero persistent writes, outbound calls or subprocess creation.
+The test harness may orchestrate children/create public scratch outside the guarded
+application. Preserve positive controls for every runtime-guard exception.

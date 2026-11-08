@@ -8,6 +8,23 @@ import { fixtureTransport } from "./fixtures/ynab.js";
 import type { MockTransport } from "./ynab/transport.js";
 import { canonicalError } from "./tools/errors.js";
 import { operationalLog } from "./errors.js";
+import { Authenticator } from "./auth/verifier.js";
+import { authResponse } from "./auth/http-auth.js";
+import { AuthError } from "./auth/errors.js";
+import { loadBundle } from "./auth/fixture-bundle.js";
+import {
+  fixtureTransport as authFixtureTransport,
+  type AuthTransport,
+} from "./auth/contracts.js";
+import {
+  buildOAuthProtectedResourceMetadata,
+  getOAuthProtectedResourceMetadataUrl,
+} from "@modelcontextprotocol/server";
+import {
+  requestContext,
+  newRequestContext,
+  requestLog,
+} from "./auth/request-context.js";
 
 function reply(res: ServerResponse, status: number, code: string) {
   res.writeHead(status, {
@@ -55,11 +72,35 @@ export function sanitizeProtocolResponse(value: unknown): unknown {
 export function createFixtureHttp(
   config: Config,
   transport: MockTransport = fixtureTransport,
+  authTransport?: AuthTransport,
+  observeProtocol: (request: Request) => void = () => {},
 ) {
+  const auth = new Authenticator(
+    config.auth,
+    authTransport ?? authFixtureTransport(loadBundle(config.auth.fixtureFile)),
+  );
+  const metadataUrl = getOAuthProtectedResourceMetadataUrl(
+    new URL(config.auth.audience),
+  );
+  const metadataPath = new URL(metadataUrl).pathname;
+  const metadata = {
+    ...buildOAuthProtectedResourceMetadata({
+      resourceServerUrl: new URL(config.auth.audience),
+      scopesSupported: ["ynab:read"],
+      oauthMetadata: {
+        issuer: config.auth.issuer,
+        authorization_endpoint: `${config.auth.issuer}authorize`,
+        token_endpoint: `${config.auth.issuer}oauth/token`,
+        response_types_supported: ["code"],
+      },
+    }),
+    bearer_methods_supported: ["header"],
+  };
   const client = new MockYnabClient(config, transport);
   const handler = createFixtureHandler(config, client);
   const guardedFetch = {
     async fetch(request: Request) {
+      observeProtocol(request);
       // This slice has no subscription streams, even when the SDK supports them.
       let method: unknown;
       try {
@@ -133,30 +174,78 @@ export function createFixtureHttp(
         reply(res, 403, "LOCAL_ORIGIN_REQUIRED");
         return;
       }
+      if (req.url === metadataPath) {
+        if (!["GET", "HEAD", "OPTIONS"].includes(req.method ?? "")) {
+          reply(res, 405, "METHOD_NOT_ALLOWED");
+          return;
+        }
+        res.setHeader("Allow", "GET, HEAD, OPTIONS");
+        res.setHeader("Content-Type", "application/json");
+        res.statusCode = req.method === "OPTIONS" ? 204 : 200;
+        res.end(req.method === "GET" ? JSON.stringify(metadata) : undefined);
+        return;
+      }
       if (req.url !== "/healthz" && req.url !== "/mcp") {
         reply(res, 404, "NOT_FOUND");
         return;
       }
       if (req.url === "/healthz") {
-        if (req.method !== "GET") {
+        if (req.method !== "GET" && req.method !== "HEAD") {
           reply(res, 405, "METHOD_NOT_ALLOWED");
           return;
         }
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok", data_mode: "fixtures" }));
-        return;
-      }
-      if (req.method !== "POST") {
-        reply(res, 405, "METHOD_NOT_ALLOWED");
+        res.end(
+          req.method === "HEAD"
+            ? undefined
+            : JSON.stringify({ status: "ok", data_mode: "fixtures" }),
+        );
         return;
       }
       if (Number(req.headers["content-length"]) > 65536) {
         reply(res, 413, "BODY_TOO_LARGE");
         return;
       }
-      void adapter(req, res).catch(() => {
-        if (!res.headersSent) reply(res, 500, "HTTP_FAILED");
-        else res.destroy();
+      void requestContext.run(newRequestContext(), async () => {
+        const abort = new AbortController();
+        const disconnect = () => {
+          if (!res.writableFinished) abort.abort();
+        };
+        res.once("close", disconnect);
+        req.once("aborted", disconnect);
+        try {
+          try {
+            if (count("authorization") > 1) throw new AuthError("invalid");
+            await auth.authenticate(req.headers.authorization, abort.signal);
+          } catch (error) {
+            if (abort.signal.aborted) return;
+            const response = authResponse(error, config.auth.audience);
+            requestLog("auth", response.status);
+            res.writeHead(
+              response.status,
+              Object.fromEntries(response.headers),
+            );
+            res.end(await response.text());
+            return;
+          }
+          if (abort.signal.aborted) return;
+          requestLog("auth", 200);
+          delete req.headers.authorization;
+          for (let i = req.rawHeaders.length - 2; i >= 0; i -= 2)
+            if (req.rawHeaders[i]?.toLowerCase() === "authorization")
+              req.rawHeaders.splice(i, 2);
+          if (req.method !== "POST") {
+            reply(res, 405, "METHOD_NOT_ALLOWED");
+            return;
+          }
+          await adapter(req, res);
+        } catch {
+          if (!res.headersSent) reply(res, 500, "HTTP_FAILED");
+          else res.destroy();
+        } finally {
+          res.off("close", disconnect);
+          req.off("aborted", disconnect);
+        }
       });
     },
   );
@@ -179,6 +268,7 @@ export function createFixtureHttp(
   return {
     server,
     async close() {
+      auth.close();
       client.close();
       const closed = server.listening
         ? new Promise<void>((resolve) => server.close(() => resolve()))

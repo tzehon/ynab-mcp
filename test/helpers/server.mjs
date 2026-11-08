@@ -4,20 +4,19 @@ import {
 } from "@modelcontextprotocol/client";
 import { parseConfig } from "../../dist/config.js";
 import { createFixtureHttp } from "../../dist/http.js";
-export const fixtureEnv = {
-  LOCAL_FIXTURE_MODE: "true",
-  DATA_MODE: "fixtures",
-  NODE_ENV: "test",
-  FIXTURE_ALLOWED_PLAN_IDS: '["fixture-plan-sgd"]',
-};
-export async function serve(t, env = {}, catalog, transport) {
+import { fixtureEnv, unusedPort, portEnv, tokenFor } from './auth.mjs';
+export { fixtureEnv } from './auth.mjs';
+export async function serve(t, env = {}, catalog, transport, authTransport, observeProtocol) {
+  const port = await unusedPort();
   const app = createFixtureHttp(
-    parseConfig({ ...fixtureEnv, ...env }, catalog),
+    parseConfig({ ...fixtureEnv, ...portEnv(port), ...env }, catalog),
     transport,
+    authTransport,
+    observeProtocol,
   );
   await new Promise((resolve, reject) => {
     app.server.once("error", reject);
-    app.server.listen(0, "127.0.0.1", resolve);
+    app.server.listen(port, "127.0.0.1", resolve);
   });
   t.after(() => app.close());
   return {
@@ -38,8 +37,11 @@ export async function connect(t, url, era = "legacy", observe = () => {}) {
   const transport = new StreamableHTTPClientTransport(new URL(url), {
     fetch: async (u, o = {}) => {
       const parsed = o.body ? JSON.parse(o.body) : {};
+      const headers = new Headers(o.headers);
+      headers.set("Authorization", `Bearer ${tokenFor(new URL(url).port)}`);
       const r = await fetch(u, {
         ...o,
+        headers,
         redirect: "error",
         signal: AbortSignal.timeout(5000),
       });

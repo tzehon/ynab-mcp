@@ -1,11 +1,18 @@
+import { tokenFor } from "./helpers/auth.mjs";
+import { authorizedFetch as fetch } from "./helpers/auth.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import net from "node:net";
 import { launch, unusedPort } from "./helpers/process.mjs";
-import { runSmoke } from "../scripts/smoke-mcp.mjs";
+import { runSmoke as baseRunSmoke } from "../scripts/smoke-mcp.mjs";
 
 test("spawned server exits without binding on invalid startup and redacts diagnostics", async () => {
   for (const extra of [
+    { AUTH_ISSUER: undefined },
+    { AUTH_AUDIENCE: undefined },
+    { AUTH_ALLOWED_SUBJECT: undefined },
+    { AUTH_FIXTURE_FILE: "/missing/SECRET_MARKER" },
+    { MCP_PUBLIC_URL: undefined },
     { LOCAL_FIXTURE_MODE: undefined },
     { DATA_MODE: "live" },
     { NODE_ENV: "production" },
@@ -61,3 +68,5 @@ test("port conflict fails nonzero without disturbing the existing listener", asy
   assert.ok(!b.output().includes("Error:"));
   assert.equal((await fetch(`http://127.0.0.1:${port}/healthz`)).status, 200);
 });
+
+function runSmoke(url, report) { return baseRunSmoke(url, report, tokenFor(new URL(url).port)); }

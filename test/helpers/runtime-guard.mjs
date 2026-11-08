@@ -56,7 +56,7 @@ for (const target of [fs, fs.promises]) {
     target[key] = (path, flags, ...rest) => {
       const readOnly =
         typeof flags === "number"
-          ? flags === fs.constants.O_RDONLY
+          ? (flags & (fs.constants.O_WRONLY | fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_APPEND)) === 0
           : flags === "r" || flags === "rs";
       if (!readOnly) return blocked("writes")();
       return original(path, flags, ...rest);

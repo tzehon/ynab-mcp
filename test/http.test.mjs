@@ -1,3 +1,4 @@
+import { tokenFor } from "./helpers/auth.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -24,6 +25,7 @@ function request(
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json, text/event-stream",
+          Authorization: `Bearer ${tokenFor(port)}`,
           ...headers,
         },
       },
@@ -153,7 +155,7 @@ test("incomplete headers and bodies are terminated within the ten-second bound",
   await Promise.all(
     [
       "POST /mcp HTTP/1.1\r\nHost: ",
-      `POST /mcp HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nContent-Type: application/json\r\nContent-Length: 999\r\n\r\n{`,
+      `POST /mcp HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nAuthorization: Bearer ${tokenFor(port)}\r\nContent-Type: application/json\r\nContent-Length: 999\r\n\r\n{`,
     ].map(
       (prefix) =>
         new Promise((resolve, reject) => {

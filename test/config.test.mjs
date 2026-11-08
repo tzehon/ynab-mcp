@@ -1,3 +1,4 @@
+import { portEnv } from "./helpers/auth.mjs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseConfig } from "../dist/config.js";
@@ -28,7 +29,7 @@ test("config allows only explicit local fixtures and never echoes supplied value
   for (const NODE_ENV of [undefined, "development", "test"])
     assert.equal(parseConfig({ ...fixtureEnv, NODE_ENV }).port, 3000);
   for (const PORT of ["1", "65535"])
-    assert.equal(parseConfig({ ...fixtureEnv, PORT }).port, Number(PORT));
+    assert.equal(parseConfig({ ...fixtureEnv, ...portEnv(PORT) }).port, Number(PORT));
   assert.throws(() =>
     parseConfig({
       ...fixtureEnv,

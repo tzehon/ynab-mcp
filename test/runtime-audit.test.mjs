@@ -92,7 +92,7 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
   for (const path of paths) {
     const source = readFileSync(`src/${path}`, "utf8");
     assert.doesNotMatch(
-      ["auth/fixture-bundle.ts", "oauth/keys.ts", "oauth/store.ts"].includes(
+      ["auth/fixture-bundle.ts", "oauth/keys.ts", "oauth/store.ts", "oauth/process-lock.ts"].includes(
         path,
       )
         ? source.replaceAll("node:fs", "approved-read-loader")

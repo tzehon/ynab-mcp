@@ -98,3 +98,11 @@ prove encrypted persistence, single-use code/state, owner binding, refresh races
 reconnect, disconnect invalidation and no secret logging. No MCP refresh tokens
 are issued in this slice; upstream refresh is independent. Full plan/AC evidence
 and separate owner merge authorization are still required.
+
+YNAB-6 plan-r1 authorizes local synthetic implementation and PR publication for
+hosted authorization. The new hosted-only process-lock module may claim/release
+one private ownership file; its filesystem exception does not apply to either
+local runtime mode. Hosted configuration/key/policy modules are currently being
+tested independently and are not connected to production startup yet. Preserve
+both old runtime guards and their positive denial controls. Provider resources,
+real credentials, spending, merge and deployment remain separate owner decisions.

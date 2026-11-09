@@ -151,3 +151,35 @@ test("ambiguous provider failure and interrupted startup require reconnect", asy
   assert.equal(resumed.current(), undefined);
   assert.throws(() => resumed.check());
 });
+
+test("expired upstream blocks admission without network and storage failure cannot fake disconnect", async (t) => {
+  const h = await providerHarness(t);
+  let calls = 0,
+    now = Date.now();
+  h.store.now = () => now;
+  const lifecycle = new HostedLifecycle(
+    h.store,
+    {
+      refresh: async () => {
+        calls++;
+        return { access: "renewed", refresh: "kept", expires: now + 3600000 };
+      },
+    },
+    owner,
+  );
+  lifecycle.connect(
+    { access: "fixture", refresh: "kept", expires: now + 1000 },
+    owner,
+  );
+  now += 1001;
+  assert.throws(() => lifecycle.check());
+  assert.equal(calls, 0);
+  await lifecycle.refresh();
+  lifecycle.check();
+  assert.equal(calls, 1);
+  h.store.close();
+  assert.throws(() => lifecycle.disconnect());
+  assert.throws(() => lifecycle.ready());
+  assert.throws(() => lifecycle.check());
+  assert.equal(calls, 1);
+});

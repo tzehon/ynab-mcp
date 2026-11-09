@@ -209,3 +209,41 @@ test("hosted provider rejects redirects, malformed/oversized data and unsafe tok
   );
   h.close();
 });
+
+test("hosted provider bounds concurrent control calls, cancellation and its real deadline", async () => {
+  let calls = 0;
+  const transport = (_url, init) =>
+    new Promise((_resolve, reject) => {
+      calls++;
+      init.signal.addEventListener("abort", () =>
+        reject(Error("fixture-secret-error")),
+      );
+    });
+  const h = new HostedUpstream(
+      "fixture-id",
+      "fixture-secret",
+      `${origin}/connect/ynab/callback`,
+      transport,
+    ),
+    previous = { access: "fixture", refresh: "fixture", expires: 0 };
+  const tasks = Promise.allSettled(
+    Array.from({ length: 4 }, () => h.refresh(previous)),
+  );
+  await assert.rejects(h.refresh(previous));
+  assert.equal(calls, 4);
+  h.close();
+  assert((await tasks).every((r) => r.status === "rejected"));
+  const timed = new HostedUpstream(
+      "fixture-id",
+      "fixture-secret",
+      `${origin}/connect/ynab/callback`,
+      transport,
+    ),
+    start = Date.now();
+  await assert.rejects(
+    timed.refresh(previous),
+    (e) => e.message === "OAUTH_REJECTED",
+  );
+  assert(Date.now() - start >= 2900);
+  timed.close();
+});

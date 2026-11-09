@@ -75,7 +75,9 @@ routes, set no cookies, perform no provider requests and contain no runtime
 identifiers. Queries/aliases and non-read methods are rejected. Local test modes
 do not gain these routes. Enrollment, consent and connection pages link to the
 policy. Verify its accuracy and public availability before registration; no
-policy page or domain has yet been deployed.
+policy page or domain has yet been deployed. The shared hosted-page footer includes the
+affiliation and trademark notice required by the [YNAB API terms](https://api.ynab.com/#terms).
+Keep that notice aligned with the public registration pages when updating copy.
 
 Register `H/connect/ynab/callback` with YNAB after approval. Use `H/` as the
 website and `H/privacy` as the privacy URL, after checking both publicly. Request `read-only`.

@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 
 // Static copy only: never interpolate request data, configuration or identity.
 export function hostedPage(body: string) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MCP Tools for YNAB</title></head><body><header><h1>MCP Tools for YNAB</h1><nav aria-label="Information"><a href="/">About</a> · <a href="/privacy">Privacy policy</a></nav></header><main>${body}</main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>MCP Tools for YNAB</title></head><body><header><h1>MCP Tools for YNAB</h1><nav aria-label="Information"><a href="/">About</a> · <a href="/privacy">Privacy policy</a></nav></header><main>${body}</main><footer><p>We are not affiliated, associated, or in any way officially connected with YNAB or any of its subsidiaries or affiliates. The official YNAB website can be found at <a href="https://www.ynab.com">https://www.ynab.com</a>.</p><p>The names YNAB and You Need A Budget, as well as related names, tradenames, marks, trademarks, emblems, and images are registered trademarks of YNAB.</p></footer></body></html>`;
 }
 
 const home = hostedPage(`<h2>A private connection for the owner</h2>

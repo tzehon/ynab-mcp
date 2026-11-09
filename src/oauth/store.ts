@@ -240,6 +240,16 @@ export class Store {
       this.db.exec("DELETE FROM links");
     });
   }
+  // Bounded encrypted application records. Never expose database handles or
+  // hashed lookup keys; hosted lifecycle records carry their own opaque IDs.
+  values(model: string): RecordValue[] {
+    this.check();
+    const rows = this.db.prepare("SELECT * FROM records WHERE model=? AND expires>? LIMIT 1001")
+      .all(model, this.now()) as Row[];
+    if (rows.length > 1000) fail();
+    return rows.map(row => unseal(this.keys.encryption,
+      this.aad(model, row.id, row.expires), row.payload) as RecordValue);
+  }
   cleanup() {
     this.db
       .prepare(

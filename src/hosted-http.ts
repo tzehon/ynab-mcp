@@ -2,6 +2,7 @@ import type { Config } from "./config.js";
 import { createFixtureHttp } from "./http.js";
 import { Admission } from "./http/admission.js";
 import { hostedBoundary } from "./http/hosted-boundary.js";
+import { hostedPublicPage } from "./http/hosted-pages.js";
 import { sameOriginForm } from "./oauth/browser-request.js";
 import { fail } from "./oauth/crypto.js";
 import { hostedService } from "./oauth/hosted-service.js";
@@ -46,6 +47,7 @@ export async function createHostedHttp(
           }
           res.once("finish", slot.release);
           res.once("close", slot.release);
+          if (hostedPublicPage(req, res, path)) return false;
           if (service.enrollment && path === "/mcp") {
             res.writeHead(403);
             res.end('{"error":"enrollment_required"}');

@@ -43,6 +43,8 @@ for (const profile of ["native", "web", "basic"])
     assert.equal(r.status, 200, r.text);
     const csrf = r.text.match(/name="csrf" value="([^"]+)"/)[1];
     assert.match(r.text, /continued access/);
+    assert.match(r.text, /<title>MCP Tools for YNAB<\/title>/);
+    assert.match(r.text, /href="\/privacy"/);
     assert(
       r.headers["content-security-policy"].includes(
         new URL(redirectUri).origin,
@@ -195,6 +197,8 @@ for (const profile of ["native", "web", "basic"])
       "https://api.ynab.com/v1/user",
     ]);
     r = await browser.fetch("/connection");
+    assert.match(r.text, /<title>MCP Tools for YNAB<\/title>/);
+    assert.match(r.text, /href="\/privacy"/);
     assert.equal(r.status, 200, r.text);
     const disconnectCsrf = r.text.match(/name="csrf" value="([^"]+)"/)[1];
     r = await browser.fetch("/connection/disconnect", {

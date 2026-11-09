@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { calculatePKCECodeChallenge } from "oauth4webapi";
+import { hostedPage } from "../http/hosted-pages.js";
 import { sameOriginForm } from "./browser-request.js";
 import { fail } from "./crypto.js";
 import type { Enrollment } from "./enrollment.js";
@@ -42,7 +43,9 @@ export class EnrollmentHttp {
       );
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.end(
-        `<!doctype html><html lang="en"><meta charset="utf-8"><title>YNAB MCP setup</title><h1>Private owner setup</h1><p>Enter the one-time capability supplied privately by your operator. No budget data is requested.</p><form method="post"><input type="hidden" name="csrf" value="${csrf}"><label>Setup capability <input name="capability" type="password" autocomplete="off" required></label><button>Continue with YNAB</button></form></html>`,
+        hostedPage(
+          `<h2>Private owner setup</h2><p>Enter the one-time capability supplied privately by your operator. No budget data is requested.</p><form method="post"><input type="hidden" name="csrf" value="${csrf}"><label>Setup capability <input name="capability" type="password" autocomplete="off" required></label><button>Continue with YNAB</button></form>`,
+        ),
       );
       return;
     }
@@ -116,7 +119,9 @@ export class EnrollmentHttp {
       // No tokens or owner session are persisted by bootstrap.
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.end(
-        '<!doctype html><html lang="en"><meta charset="utf-8"><title>YNAB MCP setup</title><h1>Awaiting operator confirmation</h1><p>Your operator must confirm the intended account privately. No MCP access has been granted.</p></html>',
+        hostedPage(
+          "<h2>Awaiting operator confirmation</h2><p>Your operator must confirm the intended account privately. No MCP access has been granted.</p>",
+        ),
       );
       return;
     }

@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { calculatePKCECodeChallenge } from "oauth4webapi";
 import type Provider from "oidc-provider";
+import { hostedPage } from "../http/hosted-pages.js";
 import { sameOriginForm } from "./browser-request.js";
 import type { HostedConfig } from "./hosted-config.js";
 import type { RefreshFamilies } from "./refresh-families.js";
@@ -21,9 +22,7 @@ const escapeHtml = (s: string) =>
 function html(res: ServerResponse, body: string, formOrigins: string[] = []) {
   securityHeaders(res, formOrigins);
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(
-    `<!doctype html><html lang="en"><meta charset="utf-8"><title>YNAB MCP</title><body><h1>YNAB MCP — fixture tools</h1>${body}</body></html>`,
-  );
+  res.end(hostedPage(body));
 }
 function redirect(res: ServerResponse, url: string) {
   securityHeaders(res);

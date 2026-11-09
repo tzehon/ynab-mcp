@@ -1,0 +1,32 @@
+test/hosted-config.test.mjs
+  s_eb80e8fdbdac14::t_c4655cba11a6aa 2,150-152
+  s_eb80e8fdbdac14::t_5d8e5ce02c625e 4-149,153-166
+  s_eb80e8fdbdac14::t_a59034b8474316 1
+  s_eb80e8fdbdac14::t_6ee348159ff447 3
+src/oauth/process-lock.ts
+  s_eb80e8fdbdac14::t_73c19628a37ec5 1-57
+src/oauth/hosted-config.ts
+  s_eb80e8fdbdac14::t_73c19628a37ec5 1-168
+src/oauth/hosted-keys.ts
+  s_eb80e8fdbdac14::t_73c19628a37ec5 1-75
+AGENTS.md
+  s_eb80e8fdbdac14::t_c4655cba11a6aa 101-108
+test/runtime-audit.test.mjs
+  s_eb80e8fdbdac14::t_c4655cba11a6aa 95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "600172bb3233c476ebb23a4e7b3dd2e0c82fb016",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

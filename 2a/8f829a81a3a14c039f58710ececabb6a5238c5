@@ -1,0 +1,28 @@
+test/hosted-acceptance.test.mjs
+  s_eb80e8fdbdac14::t_d42e67aa61268f 19-24,339,407,424-477
+test/helpers/hosted-app.mjs
+  s_eb80e8fdbdac14::t_af40a25fa3ed34 171,210,216,218
+  s_eb80e8fdbdac14::t_d42e67aa61268f 198-209,211-215,217
+src/oauth/hosted-engine.ts
+  s_eb80e8fdbdac14::t_2bf92bbb8a7531 53-55
+test/hosted-boundary.test.mjs
+  s_eb80e8fdbdac14::t_e709c3e32e8865 212-249
+test/oauth-enrollment.test.mjs
+  s_eb80e8fdbdac14::t_11eabdb5c00289 154-185
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a8f829a81a3a14c039f58710ececabb6a5238c5",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

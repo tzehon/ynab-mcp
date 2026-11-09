@@ -1,0 +1,21 @@
+test/ynab-metadata.test.mjs
+  s_1d643f41a6b8a6::t_eb316db23f086d 6-7,24
+scripts/lib/pr-metadata.mjs
+  s_1d643f41a6b8a6::t_eb316db23f086d 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e07db3f58129743371cf528ac1a1d7012458957",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

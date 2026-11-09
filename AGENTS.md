@@ -118,3 +118,10 @@ requesting merge. AC-11 is separately authorized delivery. AC-12 through AC-14
 require separately approved hosted and actual-client evidence; merge alone leaves
 Ready to release. Provider resources, real credentials, spending, merge and
 deployment remain separate owner decisions. Keep all unfinished ACs pending.
+
+YNAB-6 release-amendment-r1 additionally permits canonical-host static GET/HEAD
+/ and /privacy in hosted mode only, behind existing boundary/readiness/admission
+checks. No session mutation, configuration disclosure or provider calls from
+these pages. Use MCP Tools for YNAB branding and privacy links in hosted UI.
+The amended Trial ceiling is 2 vCPU; all provider/credential/spending/deployment
+and merge decisions remain separate. Follow docs/hosting.md and docs/recovery.md.

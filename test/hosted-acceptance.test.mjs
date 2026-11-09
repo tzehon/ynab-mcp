@@ -16,7 +16,12 @@ import { hostedApp } from "./helpers/hosted-app.mjs";
 import { hostedKeys } from "../dist/oauth/hosted-keys.js";
 import { RefreshFamilies } from "../dist/oauth/refresh-families.js";
 import { providerHarness } from "./helpers/hosted-provider.mjs";
-import { decodeJwt } from "jose";
+import {
+  decodeJwt,
+  decodeProtectedHeader,
+  generateKeyPair,
+  exportJWK,
+} from "jose";
 
 const post = (browser, path, origin, values, headers = {}) =>
   browser.fetch(path, {
@@ -331,7 +336,7 @@ test("full record capacity cannot release a successor or evict consumed replay e
 });
 
 test("hosted concurrent tabs finish independently in either order and replay loses authority", async (t) => {
-  const { h, e, seen } = await hostedApp(t),
+  const { h, e, seen, restart, raw } = await hostedApp(t),
     b = new h.Browser();
   const begin = async (client) => {
     const verifier = randomBytes(32).toString("base64url"),
@@ -399,6 +404,7 @@ test("hosted concurrent tabs finish independently in either order and replay los
     const ordered = reverse ? [web, native] : [native, web],
       tokens = [];
     for (const a of ordered) tokens.push(await finish(a));
+    await restart();
     for (const tok of tokens) assert.equal(await valid(tok.access_token), 200);
     const a = ordered[0],
       values = {
@@ -415,6 +421,60 @@ test("hosted concurrent tabs finish independently in either order and replay los
     assert.equal(await valid(next.json().access_token), 401);
     assert.equal(await valid(tokens[1].access_token), 200);
   }
+  const before = await finish(await begin(e.OAUTH_NATIVE_CLIENT_ID));
+  const original = JSON.parse(raw),
+    old = original.signing[0],
+    { privateKey } = await generateKeyPair("RS256", { extractable: true });
+  const newKey = {
+    ...(await exportJWK(privateKey)),
+    kid: "fixture-rotated",
+    alg: "RS256",
+    use: "sig",
+  };
+  const deadline = Date.now() + 2000;
+  await restart({
+    keyBundle: JSON.stringify({
+      ...original,
+      signing: [newKey],
+      retiring: {
+        kty: old.kty,
+        n: old.n,
+        e: old.e,
+        kid: old.kid,
+        alg: old.alg,
+        use: old.use,
+      },
+      retiringUntil: deadline,
+    }),
+  });
+  assert.equal(await valid(before.access_token), 200);
+  const after = await finish(await begin(e.OAUTH_NATIVE_CLIENT_ID));
+  assert.equal(
+    decodeProtectedHeader(after.access_token).kid,
+    "fixture-rotated",
+  );
+  await new Promise((r) =>
+    setTimeout(r, Math.max(1, deadline - Date.now() + 20)),
+  );
+  assert.equal(await valid(before.access_token), 401);
+  assert.equal(await valid(after.access_token), 200);
+  assert.deepEqual(
+    (await b.fetch("/jwks")).json().keys.map((k) => k.kid),
+    ["fixture-rotated"],
+  );
+  const clean = join(h.root, "clean-recovery");
+  (await import("node:fs")).mkdirSync(clean, { mode: 0o700 });
+  await restart({
+    dir: clean,
+    enrollment: {
+      kind: "enroll",
+      issuance: "fixture-recovery",
+      capability: randomBytes(32).toString("hex"),
+      expires: Date.now() + 900000,
+    },
+  });
+  assert.equal(await valid(after.access_token), 403);
+  assert.equal((await b.fetch("/enroll")).status, 200);
   assert(
     seen.every((url) =>
       [

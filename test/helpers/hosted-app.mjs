@@ -168,7 +168,7 @@ export async function hostedApp(
       req.on("error", reject);
       req.end(init.body?.toString());
     });
-  const app = await createHostedHttp(config, upstream);
+  let app = await createHostedHttp(config, upstream);
   h.beforeCleanup(async () => {
     await app.close();
     await new Promise((r) => provider.close(r));
@@ -195,5 +195,25 @@ export async function hostedApp(
     });
     req.pipe(upstream);
   });
-  return { h, e, config, seen, control, app, dir, runtime, owner, raw };
+  return {
+    h,
+    e,
+    config,
+    seen,
+    control,
+    app,
+    dir,
+    runtime,
+    owner,
+    raw,
+    restart: async (hostedOverrides = {}) => {
+      await app.close();
+      app = await createHostedHttp(
+        { ...config, hosted: { ...config.hosted, ...hostedOverrides } },
+        upstream,
+      );
+      await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+      return app;
+    },
+  };
 }

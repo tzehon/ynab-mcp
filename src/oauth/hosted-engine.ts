@@ -50,7 +50,9 @@ export function hostedEngine(
         token_endpoint_auth_method: config.webMethod,
       },
     ],
-    jwks: { keys: keys.signing },
+    // The engine accepts private signing keys only. Retirement is verification-
+    // only and is published/enforced by hostedService's bounded public keyset.
+    jwks: { keys: keys.signing.slice(0, 1) },
     cookies: {
       keys: [keys.cookie],
       long: { httpOnly: true, secure: true, sameSite: "lax" },

@@ -13,11 +13,13 @@ import { launch, unusedPort } from "./helpers/process.mjs";
 
 test("runtime guard detects network, persistent writes and subprocess attempts", () => {
   for (const script of [
+    "(await import('node:net')).createServer().listen('/tmp/ynab-denied.sock')",
     "globalThis.fetch('https://example.invalid')",
     "(await import('node:net')).connect(1, '127.0.0.1')",
     "(await import('node:fs')).writeFileSync('/tmp/ynab-guard-must-not-exist', 'synthetic')",
     "await (await import('node:fs/promises')).open('/tmp/ynab-guard-must-not-exist', 'w')",
     "(await import('node:child_process')).spawn('true')",
+    "await new (await import('./dist/oauth/hosted-upstream.js')).HostedUpstream('fixture-id','fixture-secret','https://fixture.example/callback').refresh({access:'fixture',refresh:'fixture',expires:0})",
   ]) {
     const r = spawnSync(
       process.execPath,
@@ -92,9 +94,13 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
   for (const path of paths) {
     const source = readFileSync(`src/${path}`, "utf8");
     assert.doesNotMatch(
-      ["auth/fixture-bundle.ts", "oauth/keys.ts", "oauth/store.ts", "oauth/process-lock.ts"].includes(
-        path,
-      )
+      [
+        "auth/fixture-bundle.ts",
+        "oauth/keys.ts",
+        "oauth/store.ts",
+        "oauth/process-lock.ts",
+        "oauth/hosted-admin.ts",
+      ].includes(path)
         ? source.replaceAll("node:fs", "approved-read-loader")
         : source,
       /node:(?:fs|https|dns|dgram|child_process)|\beval\s*\(|\bnew Function\b/,
@@ -105,7 +111,7 @@ test("runtime source keeps filesystem, outbound adapters and dynamic evaluation 
       /YNAB_ACCESS_TOKEN\s*[=:]|\bhttps?\.(?:request|get)\s*\(/,
     );
     if (path !== "http.ts") assert.doesNotMatch(source, /\bfetch\s*\(/);
-    if (path !== "ynab/transport.ts")
+    if (path !== "ynab/transport.ts" && path !== "oauth/hosted-upstream.ts")
       assert.doesNotMatch(source, /https?:\/\/api\./);
     else
       assert.equal((source.match(/https:\/\/api\.ynab\.com/g) ?? []).length, 1);

@@ -16,6 +16,11 @@ function blocked(kind) {
   };
 }
 net.Socket.prototype.connect = blocked("network");
+const listen = net.Server.prototype.listen;
+net.Server.prototype.listen = function (...args) {
+  if (typeof args[0] === "string" || args[0]?.path) return blocked("writes")();
+  return listen.apply(this, args);
+};
 for (const target of [http, https])
   for (const key of ["request", "get"]) target[key] = blocked("network");
 for (const target of [dns, dns.promises])
@@ -56,7 +61,13 @@ for (const target of [fs, fs.promises]) {
     target[key] = (path, flags, ...rest) => {
       const readOnly =
         typeof flags === "number"
-          ? (flags & (fs.constants.O_WRONLY | fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_APPEND)) === 0
+          ? (flags &
+              (fs.constants.O_WRONLY |
+                fs.constants.O_RDWR |
+                fs.constants.O_CREAT |
+                fs.constants.O_TRUNC |
+                fs.constants.O_APPEND)) ===
+            0
           : flags === "r" || flags === "rs";
       if (!readOnly) return blocked("writes")();
       return original(path, flags, ...rest);

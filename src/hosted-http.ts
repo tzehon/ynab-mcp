@@ -35,7 +35,7 @@ export async function createHostedHttp(
           if (
             req.headers.origin !== undefined &&
             req.headers.origin !== hosted.origin &&
-            !sameOriginForm(req)
+            !sameOriginForm(req, true)
           )
             fail();
           const slot = admission.enter(path === "/enroll" ? "/auth" : path);

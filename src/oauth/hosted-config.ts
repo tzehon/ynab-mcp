@@ -150,7 +150,7 @@ export function hostedConfig(
     if (
       !/^[a-f0-9]{64}$/.test(capability) ||
       !Number.isSafeInteger(expires) ||
-      expires <= now ||
+      expires <= 0 ||
       expires > now + 900000
     )
       throw new ConfigError("OAUTH_ENROLLMENT_CAPABILITY");

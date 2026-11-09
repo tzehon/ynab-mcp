@@ -47,7 +47,10 @@ export class EnrollmentHttp {
       return;
     }
     if (path === "/enroll" && req.method === "POST") {
-      if (req.headers.origin !== this.config.origin && !sameOriginForm(req))
+      if (
+        req.headers.origin !== this.config.origin &&
+        !sameOriginForm(req, true)
+      )
         fail();
       const form = await readForm(req),
         csrf = form.get("csrf") ?? "",

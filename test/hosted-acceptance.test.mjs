@@ -70,10 +70,42 @@ test("closed HTTP enrollment requires capability, browser and private exact conf
     ).status,
     400,
   );
-  let r = await post(b, "/enroll", h.origin, {
-    csrf: csrf(form),
-    capability: e.OAUTH_ENROLLMENT_CAPABILITY,
-  });
+  assert.equal(
+    (
+      await post(b, "/enroll", "null", {
+        csrf: csrf(form),
+        capability: e.OAUTH_ENROLLMENT_CAPABILITY,
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await post(
+        b,
+        "/enroll",
+        "null",
+        { csrf: csrf(form), capability: e.OAUTH_ENROLLMENT_CAPABILITY },
+        {
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "navigate",
+          "sec-fetch-dest": "document",
+        },
+      )
+    ).status,
+    403,
+  );
+  let r = await post(
+    b,
+    "/enroll",
+    "null",
+    { csrf: csrf(form), capability: e.OAUTH_ENROLLMENT_CAPABILITY },
+    {
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "navigate",
+      "sec-fetch-dest": "document",
+    },
+  );
   assert.equal(r.status, 303);
   const url = new URL(r.headers.location);
   assert.equal(url.origin, "https://app.ynab.com");

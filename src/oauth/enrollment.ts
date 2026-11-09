@@ -21,6 +21,7 @@ export class Enrollment {
           if (saved.digest !== digest || saved.expires !== config.expires)
             fail();
         } else {
+          if (config.expires <= store.now()) fail();
           if (saved?.phase === "claimed" || saved?.phase === "candidate")
             fail();
           store.put(
@@ -97,7 +98,13 @@ export class Enrollment {
       this.store.put(
         "Enrollment",
         "current",
-        { issuance: r.issuance, phase: "candidate", candidate: owner },
+        {
+          issuance: r.issuance,
+          digest: r.digest,
+          expires: r.expires,
+          phase: "candidate",
+          candidate: owner,
+        },
         Number.MAX_SAFE_INTEGER,
         {},
         true,

@@ -27,6 +27,7 @@ account, provider configuration, budget request or deployment is exercised.
 | `test/hosted-acceptance.test.mjs` | Full enrollment HTTP/private confirmation, wrong owner, exact client methods, consent denial/CSRF, raw HTTP authority, incomplete delivery crash recovery, capacity failure, concurrent tabs and replay revocation |
 | `test/hosted-smoke.test.mjs` | Production factories, local TLS proxy/provider, native and both confidential methods, two SDK eras, all five fixture tools, disallowed plan and disconnect denial |
 | `test/hosted-runtime-audit.test.mjs` | Hosted storage/socket allowlist plus positive denial controls for filesystem, native SQLite/ATTACH, native sockets/DNS/HTTPS and subprocesses |
+| `test/hosted-pages.test.mjs` | Both enrollment/normal modes: static GET/HEAD, non-read/host/origin/query denial, no secret reflection, cookies, state writes or upstream requests, and protected MCP/connection routes |
 | Existing local suites | Both prior modes retain their separate guards and protocol/tool contracts |
 | `npm run check:container` | Image build, UID 1000, private directories/socket, bootstrap denial, competing process, graceful restart, crash refusal, bounded offline claim recovery, symlink refusal, excluded image canary and secret-log negatives |
 
@@ -41,9 +42,10 @@ wrong-client/invalid-secret submissions cannot revoke another client's family.
 
 The PR records tested SHAs, clean-clone/mutation results, CI and native Codex
 code/security review. Do not treat this inventory as a passing claim for an
-unexecuted subcheck. All fourteen criteria stay pending until their full evidence
-is recorded. Only AC-1–AC-10 are local prerequisites. AC-11 requires separately
-approved rebase delivery and traceability; AC-12–AC-14 require separately approved
+unexecuted subcheck. The original PR #6 completed AC-1–AC-11 through reviewed local checks and
+authorized rebase delivery. The release amendment requires fresh local checks,
+review and delivery for its correction; its PR records their current status.
+AC-12–AC-14 remain pending and require separately approved
 hosted enrollment, actual clients and real lifecycle observations. No live budget
 operation is authorized by this milestone.
 

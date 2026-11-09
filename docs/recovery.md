@@ -71,3 +71,36 @@ Capacity/storage failure denies authority; it never evicts active replay evidenc
 Investigate privately, stop admission if needed, and use reconnect/clean recovery
 instead of deleting arbitrary rows. Recovery evidence uses disposable synthetic
 stores; real grant restoration is never a test shortcut.
+
+## Complete service-data removal
+
+This is an operator procedure for the private owner, not an unauthenticated HTTP
+endpoint or an automatic consequence of disconnect. Obtain the applicable
+explicit deletion/credential decisions before executing it on real data.
+
+1. Disconnect while authenticated if possible. Separately revoke the application's
+   access in YNAB and remove the Codex/ChatGPT connections. If the server is
+   unavailable, revoke upstream access and remove client connections directly;
+   inability to use Disconnect must not prevent stopping or erasure.
+2. Stop every deployment/process that can mount the dedicated volume; verify
+   offline state and prevent autodeploy/restart. Record the exact volume privately
+   and confirm it contains only this service's authorization state.
+3. Through the provider's authenticated controls, delete that dedicated storage
+   and any snapshots/backups or exported authorization copies under your control.
+   Do not remove arbitrary rows or restore an older database. Logical deletion
+   and provider resource deletion do not prove immediate physical erasure from
+   the provider's media or logs; inspect its applicable retention controls/policy.
+4. If retiring the service, remove its runtime credentials/configuration and the
+   associated private key/register copies from 1Password and operator storage,
+   including retained versions/trash under the applicable retention controls.
+   Do not remove unrelated account credentials, projects or paused provider setups.
+5. Record only completion evidence, not account IDs or secrets. The service cannot
+   erase OpenAI conversations, YNAB records or Railway logs; manage those through
+   their respective account controls. If restarting later, use a clean store,
+   newly approved credentials and fresh private enrollment/consent.
+
+Disconnect removes usable hosted grants and upstream credentials but preserves
+owner binding and enrollment records. Expiry makes records unusable; bounded
+cleanup runs on writes, so expired ciphertext may remain on disk while idle.
+Neither process is a promise of secure physical erasure. Upstream connection
+records persist until disconnect/invalidation, independently of MCP grant expiry.

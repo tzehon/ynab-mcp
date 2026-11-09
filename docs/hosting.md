@@ -1,7 +1,7 @@
 # Hosted authorization with fixture tools
 
-This implementation is awaiting complete local qualification and review in
-YNAB-6. Jira owns the requirements and approvals. Merge, provider configuration,
+The original hosted implementation was delivered through PR #6. YNAB-6
+release-amendment-r1 adds naming/privacy corrections before hosted qualification. Jira owns the requirements and approvals. Merge, provider configuration,
 real credentials, spending and deployment require separate owner decisions.
 The five tools always use invented fixtures; server-side YNAB access is limited
 to OAuth token operations and `/v1/user`. No budget discovery is part of setup.
@@ -42,9 +42,14 @@ directories and refuses symlinks. `/data` must be a dedicated volume.
 ## Private configuration register
 
 Keep exact values and owner decisions in 1Password and the private release record.
-Use the existing reserved Railway service/domain after checking their current
-state. Source remains disconnected and autodeploy disabled. Let `H` be the exact
-reserved `https://<service>.up.railway.app` origin, without a trailing slash.
+Reuse the existing Railway service after inspecting its current state. The
+previously reserved hostname needs a separately approved naming correction:
+use an available neutral `budget-bridge` hostname, or a name that complies with
+YNAB’s application requirements. The public application name is **MCP Tools for
+YNAB**; the repository name is unchanged. Source remains disconnected and
+autodeploy disabled. Let `H` be the exact approved
+`https://<service>.up.railway.app` origin, without a trailing slash. Never infer it
+from incoming headers. Update every issuer/resource/callback consistently.
 
 | Setting | Required value or source |
 | --- | --- |
@@ -63,7 +68,17 @@ reserved `https://<service>.up.railway.app` origin, without a trailing slash.
 | `FIXTURE_ALLOWED_PLAN_IDS` | Explicit JSON array of approved built-in fixture IDs; empty/missing denies all |
 | `AUTH_ALLOWED_SUBJECT` | Verified YNAB UUID after enrollment; never infer from email |
 
-Register `H/connect/ynab/callback` with YNAB after approval. Request `read-only`.
+The hosted service serves static GET/HEAD `H/` and `H/privacy` without a
+credential, in both closed enrollment and normal mode. They use the same
+canonical-host, readiness, admission and security-header checks as other hosted
+routes, set no cookies, perform no provider requests and contain no runtime
+identifiers. Queries/aliases and non-read methods are rejected. Local test modes
+do not gain these routes. Enrollment, consent and connection pages link to the
+policy. Verify its accuracy and public availability before registration; no
+policy page or domain has yet been deployed.
+
+Register `H/connect/ynab/callback` with YNAB after approval. Use `H/` as the
+website and `H/privacy` as the privacy URL, after checking both publicly. Request `read-only`.
 Do not guess callbacks or enable dynamic registration if a client does not expose
 static registration. Record that qualification as blocked and revise the design.
 Do not set local/mock/PAT/debug/proxy/TLS-override environment variables.
@@ -116,10 +131,34 @@ refresh/disconnect controls; disconnect does not revoke the provider's app grant
 
 Before deployment approve the exact delivered SHA/image, service/environment,
 one-process/replica/volume topology, current plan/network eligibility and concrete
-cost envelope/stop policy. The proposed US$10 target is not spending permission.
-Verify actual account prices/credits; do not assume a trial is still eligible.
-Keep limits at or below the approved 1 vCPU, 1 GiB RAM and 0.5 GB volume. Expect
-volume-backed redeployment downtime. No horizontal scaling or shared preview store.
+cost envelope/stop policy. The approved amendment selects preparation of a
+credit-only Trial route, with a **2-vCPU ceiling**, at most **1 GiB RAM** and
+**0.5 GB volume**. This replaces the earlier 1-vCPU proposal; it does not authorize
+deployment or spending. Recheck actual allocated units and Trial eligibility.
+One service/process/replica only; no serverless sleeping during lifecycle checks,
+horizontal scaling or shared preview store. Expect volume-backed redeployment
+downtime. Do not reconnect source to trigger an automatic build.
+
+For the separate deployment decision, prepare this concrete stop procedure:
+
+- Record starting usage, remaining credits and verified expiry privately. Resolve
+  inconsistent date labels before starting. No paid upgrade, top-up or paid fallback.
+- Propose at most US$1 additional Trial usage; stop at US$2 remaining credit,
+  within 24 hours of verified expiry, after two attended hours, at session end,
+  or on unexpected plan/usage changes, whichever happens first.
+- Check usage at start, at most every 15 minutes and before stopping. Record the
+  responsible operator and how they stop the active deployment; verify it is
+  offline and cannot automatically restart. Keep compute stopped between sessions.
+- Account for continuing volume charges. Usage reporting can lag, so manual
+  observations are not a guaranteed monetary hard cap. No configurable Trial
+  hard cap was established by preflight. Trial exhaustion/expiry is the provider
+  fallback; reverify it and refuse any step that requires payment.
+
+Keep live expiry/refresh evidence pending across attended sessions rather than
+shortening upstream lifetimes. Persistent encrypted state permits later resume.
+If the credit window cannot accommodate qualification, stop and record the gap;
+never infer permission to upgrade. Private account amounts and identifiers belong
+in 1Password, not this guide.
 
 Qualification requires observed edge HTTPS/Host behavior, volume permissions,
 public denial and platform-log canaries before any real consent; generic health

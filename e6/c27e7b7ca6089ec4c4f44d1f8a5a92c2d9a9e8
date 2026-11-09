@@ -1,0 +1,38 @@
+src/oauth/enrollment.ts
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 101-107
+  s_eb80e8fdbdac14::t_db7a92b40ecbe0 24
+test/oauth-enrollment.test.mjs
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 186-212
+src/oauth/hosted-config.ts
+  s_eb80e8fdbdac14::t_db7a92b40ecbe0 153
+test/hosted-config.test.mjs
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 152-164
+  s_eb80e8fdbdac14::t_73529ded74bcb7 87-89
+docs/recovery.md
+  s_eb80e8fdbdac14::t_d3b698d67a95c3 53-55
+src/oauth/browser-request.ts
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 14-17
+  s_eb80e8fdbdac14::t_73529ded74bcb7 7
+src/hosted-http.ts
+  s_eb80e8fdbdac14::t_73529ded74bcb7 38
+src/oauth/hosted-enrollment-http.ts
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 50-53
+test/hosted-acceptance.test.mjs
+  s_eb80e8fdbdac14::t_b39253ef5d09bb 73-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6c27e7b7ca6089ec4c4f44d1f8a5a92c2d9a9e8",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

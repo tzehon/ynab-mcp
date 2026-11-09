@@ -61,6 +61,8 @@ test("closed HTTP enrollment requires capability, browser and private exact conf
   assert(metadata.scopes_supported.includes("offline_access"));
   const form = await b.fetch("/enroll");
   assert.equal(form.status, 200);
+  assert.match(form.text, /<title>MCP Tools for YNAB<\/title>/);
+  assert.match(form.text, /href="\/privacy"/);
   assert.equal(
     (
       await post(stranger, "/enroll", h.origin, {

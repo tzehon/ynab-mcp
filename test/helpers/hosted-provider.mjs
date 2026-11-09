@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { exportJWK, generateKeyPair } from "jose";
 import Provider from "oidc-provider";
 import { Store } from "../../dist/oauth/store.js";
-import { adapterFor } from "../../dist/oauth/adapter.js";
+import { hostedAdapter } from "../../dist/oauth/hosted-adapter.js";
 import { RefreshFamilies } from "../../dist/oauth/refresh-families.js";
 import {
   hostedPolicy,
@@ -24,7 +24,7 @@ import {
 
 export async function providerHarness(t) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "ynab-engine-")));
-  t.after(() => rmSync(root, { recursive: true, force: true }));
+  let beforeCleanup = async () => {};
   execFileSync(
     "openssl",
     [
@@ -53,7 +53,7 @@ export async function providerHarness(t) {
     (req, res) => dispatch(req, res),
   );
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
-  t.after(() => new Promise((r) => server.close(r)));
+
   const origin = `https://127.0.0.1:${server.address().port}`,
     resource = `${origin}/mcp`;
   const signing = await generateKeyPair("RS256", { extractable: true });
@@ -70,9 +70,9 @@ export async function providerHarness(t) {
   mkdirSync(dir, { mode: 0o700 });
   let generation = "synthetic-generation";
   const store = new Store(dir, keys);
-  t.after(() => store.close());
+
   const families = new RefreshFamilies(store, () => generation);
-  const BaseAdapter = adapterFor(store);
+  const BaseAdapter = hostedAdapter(store, families);
   let failSave = false,
     failFinalize = false,
     beforeFinalize;
@@ -179,6 +179,21 @@ export async function providerHarness(t) {
     context.run({}, async () => {
       const op = context.getStore();
       await next();
+      // The stock engine rejects an expired member before findAccount. Its
+      // invalid_grant response follows client authentication; invalid_client
+      // must never be treated as evidence of authenticated token possession.
+      if (
+        ctx.path === "/token" &&
+        ctx.body?.error === "invalid_grant" &&
+        ctx.oidc.params?.grant_type === "refresh_token"
+      ) {
+        const source = await provider.RefreshToken.find(
+          ctx.oidc.params.refresh_token,
+          { ignoreExpiration: true },
+        );
+        if (source?.consumed && source.clientId === ctx.oidc.client?.clientId)
+          families.revoke(source.grantId);
+      }
       if (op.family) {
         if (beforeFinalize) await beforeFinalize(op.family);
         if (
@@ -360,8 +375,21 @@ export async function providerHarness(t) {
         : {}),
     });
   }
+  t.after(async () => {
+    await beforeCleanup();
+    await new Promise((r) => server.close(r));
+    store.close();
+    rmSync(root, { recursive: true, force: true });
+  });
   return {
+    beforeCleanup: (fn) => {
+      beforeCleanup = fn;
+    },
     provider,
+    setHandler: (handler) => {
+      dispatch = handler;
+    },
+    root,
     rows,
     families,
     store,

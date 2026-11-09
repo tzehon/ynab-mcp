@@ -9,6 +9,7 @@ test("integrated guard rejects native SQLite paths, ATTACH, file reads, network 
   const h = await harness(t);
   await h.stop();
   const cases = [
+    "(await import('node:net')).createServer().listen('/tmp/ynab-denied.sock')",
     "new (await import('node:sqlite')).DatabaseSync('/tmp/forbidden.db',{allowExtension:false})",
     "(await import('node:fs')).readFileSync('/etc/hosts')",
     "(await import('node:fs/promises')).open('/tmp/forbidden','w')",

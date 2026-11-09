@@ -166,6 +166,11 @@ class GuardedDatabase extends Original {
 sqlite.DatabaseSync = GuardedDatabase;
 if (sqlite.Database === Original) sqlite.Database = GuardedDatabase;
 sqlite.backup = deny;
+const listen = net.Server.prototype.listen;
+net.Server.prototype.listen = function (...args) {
+  if (typeof args[0] === "string" || args[0]?.path) return deny();
+  return listen.apply(this, args);
+};
 const connect = net.Socket.prototype.connect;
 net.Socket.prototype.connect = function (...args) {
   let a = args[0];

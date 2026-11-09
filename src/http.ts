@@ -1,4 +1,8 @@
-import { createServer, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import type { Socket } from "node:net";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import {
@@ -76,8 +80,18 @@ export function createFixtureHttp(
   transport: MockTransport = fixtureTransport,
   authTransport?: AuthTransport,
   observeProtocol: (request: Request) => void = () => {},
+  runtime?: {
+    oauth: Pick<
+      ReturnType<typeof createOAuth>,
+      "handle" | "close" | "verification"
+    >;
+    before: (req: IncomingMessage, res: ServerResponse) => boolean;
+  },
 ) {
-  const oauth = config.oauth ? createOAuth(config.oauth) : undefined;
+  if (config.host === "0.0.0.0" && !runtime)
+    throw new Error("HOSTED_FACTORY_REQUIRED");
+  const oauth =
+    runtime?.oauth ?? (config.oauth ? createOAuth(config.oauth) : undefined);
   const auth = new Authenticator(
     config.auth,
     authTransport ??
@@ -169,6 +183,7 @@ export function createFixtureHttp(
     },
     (req, res) => {
       res.setHeader("Connection", "close");
+      if (runtime && !runtime.before(req, res)) return;
       const address = server.address();
       const authority =
         typeof address === "object" && address
@@ -180,12 +195,13 @@ export function createFixtureHttp(
           (_, i) => i % 2 === 0 && req.rawHeaders[i]?.toLowerCase() === name,
         ).length;
       if (
-        count("host") !== 1 ||
-        req.headers.host !== authority ||
-        count("origin") > 1 ||
-        (req.headers.origin !== undefined &&
-          req.headers.origin !== `http://${authority}` &&
-          !(oauth && sameOriginForm(req)))
+        !runtime &&
+        (count("host") !== 1 ||
+          req.headers.host !== authority ||
+          count("origin") > 1 ||
+          (req.headers.origin !== undefined &&
+            req.headers.origin !== `http://${authority}` &&
+            !(oauth && sameOriginForm(req))))
       ) {
         reply(res, 403, "LOCAL_ORIGIN_REQUIRED");
         return;
@@ -197,6 +213,7 @@ export function createFixtureHttp(
         req.url !== "/mcp"
       ) {
         if (
+          !runtime &&
           Object.keys(req.headers).some(
             (k) => k.startsWith("x-forwarded-") || k === "forwarded",
           )

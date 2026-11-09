@@ -1,10 +1,13 @@
 import { parseConfig } from "./config.js";
 import { ConfigError, operationalLog } from "./errors.js";
+import { createHostedHttp } from "./hosted-http.js";
 import { createFixtureHttp } from "./http.js";
 
 try {
   const config = parseConfig(process.env);
-  const app = createFixtureHttp(config);
+  const app = config.hosted
+    ? await createHostedHttp(config)
+    : createFixtureHttp(config);
   let closing = false;
   const shutdown = async () => {
     if (closing) return;

@@ -22,6 +22,7 @@ export class Store {
     readonly dir: string,
     private keys: Keys,
     readonly now = () => Date.now(),
+    private hosted = false,
   ) {
     this.file = statePath(dir);
     for (const suffix of ["", "-wal", "-shm"])
@@ -105,6 +106,7 @@ export class Store {
           "authorization.sqlite",
           "authorization.sqlite-wal",
           "authorization.sqlite-shm",
+          ...(this.hosted ? ["owner.lock"] : []),
         ].includes(f)
       )
         fail();
@@ -240,15 +242,32 @@ export class Store {
       this.db.exec("DELETE FROM links");
     });
   }
+  clearHostedAuthorization() {
+    this.transaction(() => {
+      this.db
+        .prepare(
+          "DELETE FROM records WHERE model NOT IN ('KeyCheck','OwnerBinding','Enrollment','HostedSchema')",
+        )
+        .run();
+      this.db.exec("DELETE FROM links");
+    });
+  }
   // Bounded encrypted application records. Never expose database handles or
   // hashed lookup keys; hosted lifecycle records carry their own opaque IDs.
   values(model: string): RecordValue[] {
     this.check();
-    const rows = this.db.prepare("SELECT * FROM records WHERE model=? AND expires>? LIMIT 1001")
+    const rows = this.db
+      .prepare("SELECT * FROM records WHERE model=? AND expires>? LIMIT 1001")
       .all(model, this.now()) as Row[];
     if (rows.length > 1000) fail();
-    return rows.map(row => unseal(this.keys.encryption,
-      this.aad(model, row.id, row.expires), row.payload) as RecordValue);
+    return rows.map(
+      (row) =>
+        unseal(
+          this.keys.encryption,
+          this.aad(model, row.id, row.expires),
+          row.payload,
+        ) as RecordValue,
+    );
   }
   cleanup() {
     this.db

@@ -13,7 +13,7 @@ import { dirname } from "node:path";
 import { fail } from "./crypto.js";
 import { privatePath } from "./keys.js";
 
-// Claim lives beside the SQLite directory. No timeout, PID or heartbeat can
+// Claim lives inside the private SQLite directory. No timeout, PID or heartbeat can
 // authorize stealing it. Crash residue requires an operator-proven stop.
 export function claimProcess(path: string) {
   privatePath(dirname(path), true);

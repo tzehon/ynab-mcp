@@ -192,3 +192,48 @@ test("hosted engine: idle and absolute expiry and independent family", async (t)
   for (const path of ["/reg", "/introspection", "/revocation", "/me"])
     assert.equal((await b.fetch(path)).status, 404);
 });
+
+test("hosted engine: expired consumed member still revokes its live family only after authentication", async (t) => {
+  const h = await providerHarness(t),
+    a = await h.authorize({ client: "web" }),
+    r = await h.exchange(a);
+  const id = decodeJwt(r.body.access_token).grant_id;
+  const next = await h.token({
+    grant_type: "refresh_token",
+    client_id: "web",
+    client_secret: "synthetic-client-secret-for-engine-probe",
+    refresh_token: r.body.refresh_token,
+  });
+  assert.equal(next.status, 200);
+  const previous = h.store.get("RefreshToken", r.body.refresh_token),
+    family = h.families.get(id);
+  h.store.put(
+    "RefreshToken",
+    r.body.refresh_token,
+    { ...previous, exp: Math.floor(Date.now() / 1000) - 1 },
+    family.deadline,
+    { grantId: id },
+  );
+  // No expired-row cleanup may discard this family's replay evidence.
+  h.store.cleanup();
+  assert(h.store.get("RefreshToken", r.body.refresh_token));
+  const bad = await h.token({
+    grant_type: "refresh_token",
+    client_id: "web",
+    client_secret: "wrong",
+    refresh_token: r.body.refresh_token,
+  });
+  assert.equal(bad.body.error, "invalid_client");
+  assert.equal(h.families.get(id).status, "active");
+  const replay = await h.token({
+    grant_type: "refresh_token",
+    client_id: "web",
+    client_secret: "synthetic-client-secret-for-engine-probe",
+    refresh_token: r.body.refresh_token,
+  });
+  assert.equal(replay.status, 400);
+  assert.equal(h.families.get(id).status, "revoked");
+  assert.throws(() =>
+    h.families.check(id, "web", "synthetic-owner", h.resource),
+  );
+});

@@ -14,6 +14,7 @@ type Family = RecordValue & {
   deadline: number;
   status: "pending" | "active" | "rotating" | "revoked";
   operation?: string;
+  deliveryPending?: boolean;
 };
 export type Reservation = {
   family: string;
@@ -32,7 +33,11 @@ export class RefreshFamilies {
     this.guard(() => {
       for (const row of store.values("RefreshFamily")) {
         const f = row as Family;
-        if (f.status === "rotating" || f.status === "pending")
+        if (
+          f.status === "rotating" ||
+          f.status === "pending" ||
+          f.deliveryPending
+        )
           this.revoke(f.id);
       }
     });
@@ -74,6 +79,9 @@ export class RefreshFamilies {
   get(id: string) {
     return this.store.get("RefreshFamily", id) as Family | undefined;
   }
+  ready() {
+    if (this.failed) fail();
+  }
   reserve(
     id: string,
     client: string,
@@ -92,6 +100,7 @@ export class RefreshFamilies {
         if (
           f.generation !== this.currentGeneration() ||
           consumed ||
+          f.deliveryPending ||
           f.status !== (initial ? "pending" : "active") ||
           now >= f.used + IDLE_SECONDS * 1000 ||
           now >= f.deadline
@@ -107,7 +116,7 @@ export class RefreshFamilies {
     if (!result) fail();
     return result;
   }
-  finish(op: Reservation) {
+  finish(op: Reservation, deliveryPending = false) {
     if (this.failed) fail();
     let ok = false;
     this.guard(() =>
@@ -125,11 +134,42 @@ export class RefreshFamilies {
           this.write({ ...f, status: "revoked", operation: undefined });
           return;
         }
-        this.write({ ...f, status: "active", operation: undefined, used: now });
+        this.write({
+          ...f,
+          status: "active",
+          operation: deliveryPending ? op.operation : undefined,
+          deliveryPending,
+          used: now,
+        });
         ok = true;
       }),
     );
     if (!ok) fail();
+  }
+  delivered(op: Reservation) {
+    this.guard(() =>
+      this.store.transaction(() => {
+        const f = this.get(op.family);
+        if (
+          f?.status !== "active" ||
+          !f.deliveryPending ||
+          f.operation !== op.operation ||
+          f.generation !== this.currentGeneration()
+        )
+          return;
+        this.write({ ...f, deliveryPending: false, operation: undefined });
+      }),
+    );
+  }
+  allowCode(id: string, client: string, owner: string) {
+    const f = this.guard(() => this.get(id));
+    if (
+      f?.status !== "pending" ||
+      f.client !== client ||
+      f.owner !== owner ||
+      f.generation !== this.currentGeneration()
+    )
+      fail();
   }
   revoke(id: string) {
     this.guard(() =>
@@ -145,6 +185,7 @@ export class RefreshFamilies {
       now = this.store.now();
     if (
       f?.status !== "active" ||
+      f.deliveryPending ||
       f.client !== client ||
       f.owner !== owner ||
       f.resource !== resource ||

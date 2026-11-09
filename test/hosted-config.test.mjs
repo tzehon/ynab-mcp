@@ -84,7 +84,9 @@ test("hosted contracts require explicit production opt-in and reject local/live 
       now,
     ),
   );
-  assert.throws(() => hostedConfig(enroll, now + 900001));
+  // Startup's durable Enrollment boundary decides whether an expired issuance
+  // is a recoverable saved candidate or a forbidden fresh enrollment.
+  assert.equal(hostedConfig(enroll, now + 900001).enrollment.kind, "enroll");
 });
 
 test("hosted key custody is memory-only with independent secrets and bounded public retirement", async () => {
@@ -147,9 +149,19 @@ test("ownership claim never steals another process or crash residue and checks r
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, "owner.lock"),
     first = claimProcess(path);
-  const denied = spawnSync(process.execPath, ["--import", "./test/helpers/runtime-guard.mjs", "--input-type=module", "-e",
-    `try {(await import('./dist/oauth/process-lock.js')).claimProcess(${JSON.stringify(join(dir,"fixture-denied.lock"))});}catch{}`], {encoding:"utf8"});
-  assert.equal(denied.status,1);assert.match(denied.stderr,/RUNTIME_GUARD.*"writes":1/);
+  const denied = spawnSync(
+    process.execPath,
+    [
+      "--import",
+      "./test/helpers/runtime-guard.mjs",
+      "--input-type=module",
+      "-e",
+      `try {(await import('./dist/oauth/process-lock.js')).claimProcess(${JSON.stringify(join(dir, "fixture-denied.lock"))});}catch{}`,
+    ],
+    { encoding: "utf8" },
+  );
+  assert.equal(denied.status, 1);
+  assert.match(denied.stderr, /RUNTIME_GUARD.*"writes":1/);
   assert.throws(() => claimProcess(path));
   const value = readFileSync(path, "utf8");
   writeFileSync(path, hex());

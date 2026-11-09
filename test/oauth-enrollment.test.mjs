@@ -183,3 +183,30 @@ test("expired upstream blocks admission without network and storage failure cann
   assert.throws(() => lifecycle.check());
   assert.equal(calls, 1);
 });
+
+test("pending candidate survives expiry and restart for private confirmation without reopening capability", async (t) => {
+  const h = await providerHarness(t),
+    c = config();
+  let now = Date.now();
+  h.store.now = () => now;
+  const e = new Enrollment(h.store, c),
+    flow = e.claim(c.capability, "fixture-browser");
+  e.candidate(flow, "fixture-browser", owner);
+  now = c.expires + 1;
+  const reopened = new Enrollment(h.store, c);
+  assert.equal(reopened.inspectCandidate(), owner);
+  assert.throws(() => reopened.claim(c.capability, "new-browser"));
+  reopened.confirm(owner);
+  assert.equal(
+    new Enrollment(h.store, { kind: "owner", owner }).status(),
+    "confirmed",
+  );
+  assert.throws(() => new Enrollment(h.store, c));
+});
+
+test("fresh expired enrollment is rejected even though saved pending issuances can recover", async (t) => {
+  const h = await providerHarness(t),
+    c = { ...config(), expires: Date.now() - 1 };
+  assert.throws(() => new Enrollment(h.store, c));
+  assert.equal(h.store.get("Enrollment", "current"), undefined);
+});

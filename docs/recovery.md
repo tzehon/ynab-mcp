@@ -50,6 +50,9 @@ reset by restarting or supplying a different capability. Complete the private
 candidate decision if legitimate; otherwise stop and use an explicitly approved
 clean-store recovery. Confirmation persisted before a configuration interruption
 requires the exact verified owner setting and removal of all enrollment settings.
+The same saved issuance can reopen for private inspection/confirmation even after
+its admission deadline. That does not make the expired capability usable again;
+fresh expired enrollment still fails startup, and candidate state cannot claim again.
 
 ## Keys and storage limits
 

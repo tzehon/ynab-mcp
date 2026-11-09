@@ -1,5 +1,10 @@
 # ynab-mcp
 
+Hosted integrated authorization is under development in YNAB-6. See
+[hosting](docs/hosting.md) and [recovery](docs/recovery.md) for the explicit mode,
+private enrollment and release gates. All tools still use synthetic fixtures.
+Local modes retain the restrictions below. No live deployment is implied.
+
 A local, fixture-only MCP server and delivery checks for a future personal,
 read-only YNAB service. Five tools expose invented plans, accounts, month values,
 category metadata and transactions through an in-memory mock adapter. It is not connected to YNAB, Codex or ChatGPT, and is not hosted.

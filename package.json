@@ -19,7 +19,9 @@
     "dev": "npm run build && node dist/main.js",
     "smoke:mcp": "node scripts/smoke-mcp.mjs",
     "smoke:auth-fixtures": "node scripts/auth-fixture-smoke.mjs",
-    "smoke:auth-integrated": "node scripts/integrated-auth-smoke.mjs"
+    "smoke:auth-integrated": "node scripts/integrated-auth-smoke.mjs",
+    "check:container": "node scripts/check-container.mjs",
+    "smoke:auth-hosted": "npm run build && node --test test/hosted-smoke.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",

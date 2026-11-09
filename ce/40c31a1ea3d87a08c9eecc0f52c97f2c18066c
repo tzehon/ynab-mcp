@@ -1,0 +1,43 @@
+src/hosted-http.ts
+  s_eb80e8fdbdac14::t_4c32c965fae4d9 5,50
+src/oauth/hosted-enrollment-http.ts
+  s_eb80e8fdbdac14::t_78509e6192bfda 46-48,122-124
+  s_eb80e8fdbdac14::t_4c32c965fae4d9 3
+src/http/hosted-pages.ts
+  s_eb80e8fdbdac14::t_4c32c965fae4d9 1-55
+src/oauth/hosted-interactions.ts
+  s_eb80e8fdbdac14::t_4c32c965fae4d9 4,25
+test/hosted-pages.test.mjs
+  s_eb80e8fdbdac14::t_69e2d08010eb6e 1-2,5-10,12,30,50,57-62,67,79-83,88-98,109,115-120
+  s_eb80e8fdbdac14::t_78509e6192bfda 14-29,33-49,51-56,63-66,68-78,84-87,99-108,110-114
+  s_1d643f41a6b8a6::t_9583f7887719db 4,13
+  s_eb80e8fdbdac14::t_b1b0822cea9094 3,11,31-32
+test/hosted-acceptance.test.mjs
+  s_1d643f41a6b8a6::t_625e9de35bf308 64-65
+test/hosted-smoke.test.mjs
+  s_1d643f41a6b8a6::t_4e5873888b76b6 46-47,200-201
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ce40c31a1ea3d87a08c9eecc0f52c97f2c18066c",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    },
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

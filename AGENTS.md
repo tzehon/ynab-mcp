@@ -38,7 +38,7 @@ Available commands (Node 26.13.0 / npm 11.20.0):
 
 Runtime dependencies: jose 6.2.15, server/client SDK 2.4.0, Node adapter 2.1.2 and Zod 4.6.7;
 tooling: TypeScript 7.0.2, Node types 26.6.6, Biome 2.6.6. See README for settings.
-Both LOCAL_FIXTURE_MODE=true and DATA_MODE=fixtures are mandatory. Bind literally
+For local modes, both LOCAL_FIXTURE_MODE=true and DATA_MODE=fixtures are mandatory. Bind literally
 127.0.0.1; production/live configuration and a nonempty YNAB_ACCESS_TOKEN fail.
 Missing/empty allowlist denies all plans. Explicit auth configuration/public fixture
 bundle is mandatory; anonymous start/dev now fails. See README for all settings.
@@ -73,7 +73,7 @@ project query for Done-with-empty-resolution or non-Done-with-resolution. Missin
 fields/errors do not pass. Reopening must clear resolution and date. Preserve
 unrelated work; do not bulk-close issues. These are manual agent checks, not CI.
 
-Authentication uses required injected mock discovery/JWKS only, with bounded
+Local fixture-token authentication uses required injected mock discovery/JWKS only, with bounded
 refresh/admission and exact owner/resource/type checks. No remote resolver or
 fallback. Keep raw Authorization and SDK AuthInfo out of protocol/tool context.
 Only auth/fixture-bundle.ts may read the bounded public bundle; the application
@@ -100,9 +100,21 @@ are issued in this slice; upstream refresh is independent. Full plan/AC evidence
 and separate owner merge authorization are still required.
 
 YNAB-6 plan-r1 authorizes local synthetic implementation and PR publication for
-hosted authorization. The new hosted-only process-lock module may claim/release
-one private ownership file; its filesystem exception does not apply to either
-local runtime mode. Hosted configuration/key/policy modules are currently being
-tested independently and are not connected to production startup yet. Preserve
-both old runtime guards and their positive denial controls. Provider resources,
-real credentials, spending, merge and deployment remain separate owner decisions.
+hosted authorization. AUTH_MODE=integrated-hosted requires explicit opt-in,
+production and fixture data. Only oauth/hosted-upstream.ts sends fixed TLS token
+POST and user GET control requests. Only oauth/store.ts accesses encrypted SQLite;
+oauth/process-lock.ts owns the private claim, and oauth/hosted-admin.ts owns the
+private Unix socket. These exceptions never apply to local runtime modes. Keys
+come from private runtime configuration; no startup key generation, arbitrary
+provider destinations, live budget transport or subprocesses. Preserve separate
+old and hosted I/O guards with positive denial controls, including native SQLite.
+
+Run npm run smoke:auth-hosted and npm run check:container as well as both existing
+start/dev smokes. Container checks use disposable state and synthetic credentials.
+Read docs/hosting.md and docs/recovery.md for exact paths, enrollment and bounded
+offline ownership recovery. Never steal a claim on a timer or restore old grants.
+AC-1 through AC-10 require full local/final-head CI and code/security review before
+requesting merge. AC-11 is separately authorized delivery. AC-12 through AC-14
+require separately approved hosted and actual-client evidence; merge alone leaves
+Ready to release. Provider resources, real credentials, spending, merge and
+deployment remain separate owner decisions. Keep all unfinished ACs pending.

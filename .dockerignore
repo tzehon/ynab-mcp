@@ -1,0 +1,14 @@
+**
+!Dockerfile
+!.dockerignore
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src
+!src/**
+!deploy
+!deploy/entrypoint.sh
+!scripts
+!scripts/authorization-admin.mjs
+!scripts/recover-ownership.mjs

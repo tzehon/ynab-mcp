@@ -1,0 +1,24 @@
+docs/hosting.md
+  s_1d643f41a6b8a6::t_1e98fa175e072c 1,3-8,47-48,58-59,69,132,169
+  s_1d643f41a6b8a6::t_f4bcc8f03ac472 78-79
+src/mcp.ts
+  s_1d643f41a6b8a6::t_a357b5881945e1 62,82
+test/ynab-live.test.mjs
+  s_1d643f41a6b8a6::t_784f77a47f3178 4-6,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5cbf991a267f14119c4a7bfba5f22b17a5f1c005",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

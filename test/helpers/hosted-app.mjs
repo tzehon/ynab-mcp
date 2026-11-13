@@ -101,7 +101,12 @@ export async function hostedApp(
     auth: { ...parsed.auth, issuer: h.origin, audience: `${h.origin}/mcp` },
   };
   const seen = [],
-    control = { owner, tokenStatus: 200 };
+    control = {
+      owner,
+      tokenStatus: 200,
+      tokenExpiresIn: live ? 30 : 3600,
+      tokenDelay: 0,
+    };
   const provider = createServer(
     {
       cert: readFileSync(join(h.root, "cert")),
@@ -117,15 +122,18 @@ export async function hostedApp(
         req.method === "POST"
       ) {
         res.statusCode = control.tokenStatus;
-        res.end(
-          JSON.stringify({
-            access_token: "invented-upstream-access",
-            refresh_token: "invented-upstream-refresh",
-            expires_in: 3600,
-            token_type: "bearer",
-            scope: "read-only",
-          }),
-        );
+        const send = () =>
+          res.end(
+            JSON.stringify({
+              access_token: "invented-upstream-access",
+              refresh_token: "invented-upstream-refresh",
+              expires_in: control.tokenExpiresIn,
+              token_type: "bearer",
+              scope: "read-only",
+            }),
+          );
+        if (control.tokenDelay) setTimeout(send, control.tokenDelay);
+        else send();
       } else if (
         req.headers.host === "api.ynab.com" &&
         req.url === "/v1/user" &&

@@ -51,6 +51,12 @@ export class HostedLifecycle {
       }),
     );
   }
+  // A client grant remains valid during upstream refresh. Token readiness is
+  // checked separately immediately before upstream dispatch/issuance.
+  checkAuthorization() {
+    const c = this.current();
+    if (!c || (c.status !== "active" && c.status !== "refreshing")) fail();
+  }
   check() {
     const c = this.current();
     if (c?.status !== "active" || c.tokens.expires <= this.store.now()) fail();

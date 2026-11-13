@@ -59,7 +59,7 @@ function setup(t, fetcher = async () => account(), refresh) {
   const select = (ids = [mapped]) =>
     live.select(life.generation(), [plan], ids);
   const authorized = (work) =>
-    authorizationContext.run(() => life.check(), work);
+    authorizationContext.run(() => life.checkAuthorization(), work);
   return { dir, store, life, live, select, authorized };
 }
 
@@ -153,7 +153,7 @@ for (const action of ["selection", "disconnect", "family", "expiry", "close"])
     const work = authorizationContext.run(
       () => {
         if (!allowed) throw Error("REVOKED_CANARY");
-        life.check();
+        life.checkAuthorization();
       },
       () => live.run((c) => listAccounts(c, { plan_id: mapped })),
     );
@@ -199,10 +199,10 @@ test("near-expiry concurrent reads share exactly one refresh", async (t) => {
     "owner",
   );
   select();
-  // Minimal verified grant closure isolates upstream serialization here; full auth pipeline tested separately.
+  // Use the same connection-validity check as the production live grant verifier.
   const read = () =>
     authorizationContext.run(
-      () => {},
+      () => life.checkAuthorization(),
       () => live.run((c) => listAccounts(c, { plan_id: mapped })),
     );
   const a = read(),

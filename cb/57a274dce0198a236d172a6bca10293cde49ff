@@ -1,0 +1,27 @@
+src/oauth/hosted-lifecycle.ts
+  s_1d643f41a6b8a6::t_db63a558070156 54-59
+src/oauth/hosted-service.ts
+  s_1d643f41a6b8a6::t_ab92d10043de08 104-105
+test/helpers/hosted-app.mjs
+  s_1d643f41a6b8a6::t_57f1172d84cccf 104-109,125-136
+test/hosted-smoke.test.mjs
+  s_1d643f41a6b8a6::t_8cbb72df04bad5 14,180-208,302,305-309
+test/ynab-live.test.mjs
+  s_1d643f41a6b8a6::t_1158a0f2dfbd33 62,156,202,205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb57a274dce0198a236d172a6bca10293cde49ff",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

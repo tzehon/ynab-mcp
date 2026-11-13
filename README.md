@@ -214,11 +214,16 @@ Install with lifecycle scripts disabled as shown above.
 | `npm run typecheck` | Strict TypeScript checks, no output |
 | `npm run lint` | Recommended Biome rules; warnings also fail |
 | `npm run build` | Compile runtime sources into ignored `dist/` |
-| `npm test` | Build, then run all delivery and fixture tests |
+| `npm test` | Build, then run all delivery and fixture test files serially |
 | `npm run check` | Typecheck, lint and test (including build) |
 | `npm run dev` / `npm start` | Build-and-start / start existing compiled output |
 | `npm run smoke:mcp -- --url <endpoint>` | Real local SDK smoke for both eras; build first |
 | `npm run check:pr -- --event <path>` | PR metadata and real Git-range validation |
+
+Test files run serially because the documented `dev` smoke tests rebuild the
+shared `dist` directory. Running other suites during that build can import
+partially written modules. Explicit concurrent-request tests still run their
+requests concurrently within each test.
 
 Tests use synthetic inputs and ephemeral loopback listeners. They include process
 startup/shutdown, protocol and HTTP error paths, allowlist isolation, slow requests

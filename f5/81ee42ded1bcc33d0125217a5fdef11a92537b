@@ -1,0 +1,79 @@
+README.md
+  s_1d643f41a6b8a6::t_0017b5f15c13aa 64,112,153,163,165-167,173-174,180-182,376
+src/tools/list-transactions.ts
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 25-47,49-52,61-62,66-76
+  s_eb80e8fdbdac14::t_5cd65ad6f5cebc 1,4-5,15,22-24,48,65,77
+scripts/smoke-mcp.mjs
+  s_eb80e8fdbdac14::t_d45ffaa77609ff 12,24-30,74,103
+  s_1d643f41a6b8a6::t_46414c92693629 144-145,148-152
+src/ynab/contracts.ts
+  s_1d643f41a6b8a6::t_052172b684ab18 68,76
+src/mcp.ts
+  s_eb80e8fdbdac14::t_5cd65ad6f5cebc 7,117-118,159-160
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 47-56,177-194,196-197
+  s_1d643f41a6b8a6::t_03e906fa8048d9 195
+src/ynab/client.ts
+  s_1d643f41a6b8a6::t_052172b684ab18 158-164,171-176,221,241,251,292-293,303-305,396
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 165-170,181-202,204-220,222-240,242-250,252-291,294-302,422-426
+src/tools/contracts.ts
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 69-80
+  s_1d643f41a6b8a6::t_052172b684ab18 26,68,125-126
+test/mcp.test.mjs
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 28
+  s_eb80e8fdbdac14::t_d45ffaa77609ff 47
+src/tools/get-month.ts
+  s_1d643f41a6b8a6::t_052172b684ab18 21
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 22-31
+test/hosted-smoke.test.mjs
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 13,284,323
+  s_1d643f41a6b8a6::t_68d18105cf9758 343-346,358
+  s_eb80e8fdbdac14::t_d45ffaa77609ff 342,347
+  s_1d643f41a6b8a6::t_eb1175621734ea 341,377
+src/tools/get-spending-report.ts
+  s_eb80e8fdbdac14::t_a71207302ed9d4 1-23,27,42-59,63-68,75-77,84,207,218,281,294,325
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 24-26,28-41,60-62,69-74,78-83,85-114,137-161,164-206,208-217,219-280,282-293,295-324
+  s_eb80e8fdbdac14::t_d45ffaa77609ff 115-136,162-163
+  s_1d643f41a6b8a6::t_7d6ca409022583 326-339
+src/fixtures/ynab.ts
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 70-71,125
+test/ynab-adapter.test.mjs
+  s_eb80e8fdbdac14::t_d45ffaa77609ff 164
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 273-284,546-557,848-858,874-876
+test/ynab-contract-boundaries.test.mjs
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 129-130
+  s_1d643f41a6b8a6::t_057203194393c7 54
+src/tools/errors.ts
+  s_1d643f41a6b8a6::t_b43bcd9faad37f 2-5
+AGENTS.md
+  s_1d643f41a6b8a6::t_cf4887fea59ec2 24-33
+docs/live-tools.md
+  s_1d643f41a6b8a6::t_282728600e528d 19,24-33
+docs/spending.md
+  s_1d643f41a6b8a6::t_aeea81db78be27 1-60
+test/spending.test.mjs
+  s_1d643f41a6b8a6::t_a62200d4850ac6 1-419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f581ee42ded1bcc33d0125217a5fdef11a92537b",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    },
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

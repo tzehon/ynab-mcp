@@ -1,10 +1,11 @@
-# Hosted authorization with fixture tools
+# Hosted authorization and owner-selected tools
 
-The original hosted implementation was delivered through PR #6. YNAB-6
-release-amendment-r1 adds naming/privacy corrections before hosted qualification. Jira owns the requirements and approvals. Merge, provider configuration,
-real credentials, spending and deployment require separate owner decisions.
-The five tools always use invented fixtures; server-side YNAB access is limited
-to OAuth token operations and `/v1/user`. No budget discovery is part of setup.
+The original hosted authorization was delivered through PR #6. YNAB-8 adds
+explicit live mode and owner-selected plans. Jira owns requirements, delegated
+owner decisions and actual release evidence. The standing authorization permits
+reviewed delivery and constrained release; required human sign-in/consent and
+agreed spending limits remain. Fixture mode stays synthetic; live mode adds
+fixed, bounded catalog and selected-plan GET requests.
 
 ## Modes and repeatable checks
 
@@ -43,9 +44,8 @@ directories and refuses symlinks. `/data` must be a dedicated volume.
 
 Keep exact values and owner decisions in 1Password and the private release record.
 Reuse the existing Railway service after inspecting its current state. The
-previously reserved hostname needs a separately approved naming correction:
-use an available neutral `budget-bridge` hostname, or a name that complies with
-YNAB’s application requirements. The public application name is **MCP Tools for
+service hostname must match the approved private register and YNAB application
+requirements; preserve the existing reservation. The public application name is **MCP Tools for
 YNAB**; the repository name is unchanged. Source remains disconnected and
 autodeploy disabled. Let `H` be the exact approved
 `https://<service>.up.railway.app` origin, without a trailing slash. Never infer it
@@ -55,7 +55,8 @@ from incoming headers. Update every issuer/resource/callback consistently.
 | --- | --- |
 | `AUTH_MODE` | `integrated-hosted` |
 | `HOSTED_AUTHORIZATION_ENABLED` | `true` |
-| `NODE_ENV` / `DATA_MODE` | `production` / `fixtures` |
+| `NODE_ENV` / `DATA_MODE` | `production` / `fixtures` during enrollment; `live` only after owner confirmation |
+| `LIVE_YNAB_ENABLED` | `true` only with live mode; otherwise absent |
 | `PORT` | Railway service port, positive integer |
 | `AUTH_ISSUER` | `H` |
 | `AUTH_AUDIENCE` / `MCP_PUBLIC_URL` | `H/mcp` |
@@ -65,7 +66,7 @@ from incoming headers. Update every issuer/resource/callback consistently.
 | `OAUTH_NATIVE_CLIENT_ID` / `OAUTH_NATIVE_CALLBACK` | Static Codex client ID and observed literal-loopback callback |
 | `OAUTH_WEB_CLIENT_ID` / `OAUTH_WEB_CALLBACK` | Static ChatGPT client ID and exact callback displayed by its setup UI |
 | `OAUTH_WEB_AUTH_METHOD` / `OAUTH_WEB_SECRET` | Observed `client_secret_post` or `client_secret_basic`, and private client secret |
-| `FIXTURE_ALLOWED_PLAN_IDS` | Explicit JSON array of approved built-in fixture IDs; empty/missing denies all |
+| `FIXTURE_ALLOWED_PLAN_IDS` | Fixture mode only: explicit built-in IDs. Must be absent in live mode; encrypted owner selection controls real plans |
 | `AUTH_ALLOWED_SUBJECT` | Verified YNAB UUID after enrollment; never infer from email |
 
 The hosted service serves static GET/HEAD `H/` and `H/privacy` without a
@@ -74,8 +75,8 @@ canonical-host, readiness, admission and security-header checks as other hosted
 routes, set no cookies, perform no provider requests and contain no runtime
 identifiers. Queries/aliases and non-read methods are rejected. Local test modes
 do not gain these routes. Enrollment, consent and connection pages link to the
-policy. Verify its accuracy and public availability before registration; no
-policy page or domain has yet been deployed. The shared hosted-page footer includes the
+policy. Verify its accuracy and public availability before registration; do not
+infer current availability from a previous deployment. The shared hosted-page footer includes the
 affiliation and trademark notice required by the [YNAB API terms](https://api.ynab.com/#terms).
 Keep that notice aligned with the public registration pages when updating copy.
 
@@ -128,7 +129,7 @@ without it the client must reauthorize after access expiry. Refresh families hav
 a seven-day idle and thirty-day absolute bound. Replay revokes that client's
 family, while local owner disconnect revokes every owner grant. YNAB tokens remain
 server-side. Upstream refresh is independent; ambiguous failure requires reconnect.
-Tools never refresh YNAB or make provider requests. `/connection` provides protected
+In live mode, tools use the bounded budget transport and shared upstream refresh; fixture mode makes no budget requests. `/connection` provides protected
 refresh/disconnect controls; disconnect does not revoke the provider's app grant.
 
 Before deployment approve the exact delivered SHA/image, service/environment,
@@ -165,7 +166,7 @@ in 1Password, not this guide.
 Qualification requires observed edge HTTPS/Host behavior, volume permissions,
 public denial and platform-log canaries before any real consent; generic health
 only confirms local readiness. Test actual Codex and ChatGPT separately with fresh
-sign-in, all five fixture tools, allowlist denial, actual expiry/refresh, restart,
+sign-in, all five tools in the intended data mode, allowlist denial, actual expiry/refresh, restart,
 disconnect/reconnect and a fresh profile or second machine. SDK tests do not prove
 those outcomes. Record deadlines privately and leave unobserved live criteria
 pending. A merge leaves the issue Ready to release until all hosted criteria pass.

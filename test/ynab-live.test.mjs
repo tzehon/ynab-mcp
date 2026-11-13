@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdtempSync, realpathSync, readFileSync, rmSync } from "node:fs";
 import { Store } from "../dist/oauth/store.js";
 import { HostedLifecycle } from "../dist/oauth/hosted-lifecycle.js";
 import { LiveService } from "../dist/ynab/live-service.js";
@@ -30,7 +32,7 @@ const catalog = {
 };
 const account = () => Response.json(fixtureDocuments[mapped].accounts);
 function setup(t, fetcher = async () => account(), refresh) {
-  const dir = mkdtempSync("/private/tmp/ynab-live-"),
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "ynab-live-"))),
     store = new Store(dir, {
       encryption: randomBytes(32),
       lookup: randomBytes(32),

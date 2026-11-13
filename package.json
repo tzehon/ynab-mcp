@@ -9,7 +9,7 @@
   },
   "packageManager": "npm@11.20.0",
   "scripts": {
-    "test": "npm run build && node --test test/*.test.mjs",
+    "test": "npm run build && node --test --test-concurrency=1 test/*.test.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "check:pr": "node scripts/check-pr-metadata.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",

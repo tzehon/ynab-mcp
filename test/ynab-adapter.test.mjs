@@ -818,15 +818,20 @@ test("real HTTP requests share process admission across server factories", async
     other = await serve(t, {}, undefined, pending);
   const c = await connect(t, app.url),
     d = await connect(t, other.url);
-  const pendingCalls = Array.from({ length: 4 }, (_, i) =>
-    (i % 2 ? c : d).callTool({
+  const pendingCalls = [];
+  // Admit each call before starting the next: this tests the shared tool budget,
+  // independently of the separate authentication budget and SDK notifications.
+  // Calls remain pending together; rejection handlers also survive early failure.
+  for (let i = 0; i < 4; i++) {
+    pendingCalls.push((i % 2 ? c : d).callTool({
       name: "ynab_list_accounts",
       arguments: { plan_id },
-    }),
-  );
-  const deadline = performance.now() + 1500;
-  while (calls < 4 && performance.now() < deadline)
-    await new Promise((r) => setTimeout(r, 5));
+    }).then(value => ({ value }), error => ({ error })));
+    const deadline = performance.now() + 1500;
+    while (calls < i + 1 && performance.now() < deadline)
+      await new Promise((r) => setTimeout(r, 5));
+    assert.equal(calls, i + 1);
+  }
   assert.equal(calls, 4);
   const denied = await c.callTool({
     name: "ynab_list_accounts",
@@ -837,7 +842,7 @@ test("real HTTP requests share process admission across server factories", async
   const outcomes = await Promise.all(pendingCalls);
   assert.ok(
     outcomes.every(
-      (r) => JSON.parse(r.content[0].text).error.code === "UPSTREAM_TIMEOUT",
+      (r) => !r.error && JSON.parse(r.value.content[0].text).error.code === "UPSTREAM_TIMEOUT",
     ),
   );
 });

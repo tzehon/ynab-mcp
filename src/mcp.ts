@@ -59,7 +59,7 @@ export function createFixtureHandler(
             readOnlyHint: true,
             destructiveHint: false,
             idempotentHint: true,
-            openWorldHint: false,
+            openWorldHint: !!live,
           },
         },
         async () => {
@@ -79,7 +79,7 @@ export function createFixtureHandler(
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        openWorldHint: false,
+        openWorldHint: !!live,
       };
       server.registerTool(
         "ynab_list_accounts",

@@ -1,0 +1,24 @@
+test/ynab-adapter.test.mjs
+  s_eb80e8fdbdac14::t_783c7a93e40b0b 821-826,829-834,845
+package.json
+  s_eb80e8fdbdac14::t_783c7a93e40b0b 12
+README.md
+  s_eb80e8fdbdac14::t_4cf49f3511c5be 217,223-226
+  s_eb80e8fdbdac14::t_a9a7e302712388 227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9e8455c8257d25f288afb7049b05cb9a1aec0d12",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

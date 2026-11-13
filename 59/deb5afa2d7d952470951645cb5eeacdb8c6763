@@ -1,0 +1,23 @@
+docs/ynab-http-transport.md
+  s_eb80e8fdbdac14::t_2bcd400be3cff1 1-51
+README.md
+  s_eb80e8fdbdac14::t_2bcd400be3cff1 3-6
+AGENTS.md
+  s_eb80e8fdbdac14::t_2bcd400be3cff1 3-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59deb5afa2d7d952470951645cb5eeacdb8c6763",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

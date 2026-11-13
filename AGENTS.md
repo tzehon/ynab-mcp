@@ -1,5 +1,23 @@
 # Working on ynab-mcp
 
+## Current owner authorization — 13 November 2026
+
+The owner explicitly authorized Codex to record approvals on their behalf and
+continue through reviewed implementation, PR publication, fixes, rebase merges,
+branch cleanup, deployment and working owner-only read access from Codex/ChatGPT.
+This supersedes the repeated personal-approval waits below for this project.
+Record each concrete scope/revision and verification in Jira; identify agent-posted
+approvals as posted on the owner's behalf. Preserve PR-only delivery, final-head
+code/security reviews, required checks, secret/privacy boundaries and agreed cost
+limits. Ask only when required human intervention or an out-of-scope commitment
+is needed. Never label an unverified acceptance criterion passed.
+
+YNAB-7 adds an injected read-only HTTP transport tested only against local mocks.
+It must remain absent from all application entrypoint graphs until a later live
+integration scope is recorded. It does not expand existing runtime I/O guards.
+
+## Existing workflow and technical constraints
+
 Jira is authoritative for current intent, Spec, Plan, Acceptance criteria and
 human decisions. Read the issue and its approval comments at task start; compare
 live fields to approved snapshots before implementation and publication.

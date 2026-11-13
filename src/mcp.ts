@@ -4,6 +4,7 @@ import { requestLog } from "./auth/request-context.js";
 import type { Config } from "./config.js";
 import { fixturePlanId } from "./tools/contracts.js";
 import { errorResult } from "./tools/errors.js";
+import * as spending from "./tools/get-spending-report.js";
 import * as month from "./tools/get-month.js";
 import * as accounts from "./tools/list-accounts.js";
 import * as categories from "./tools/list-categories.js";
@@ -43,10 +44,16 @@ export function createFixtureHandler(
     : outputSchema;
   return createMcpHandler(
     () => {
-      const server = new McpServer({
-        name: live ? "ynab-mcp" : "ynab-mcp-fixtures",
-        version: "0.1.0",
-      });
+      const server = new McpServer(
+        {
+          name: live ? "ynab-mcp" : "ynab-mcp-fixtures",
+          version: "0.2.0",
+        },
+        {
+          instructions:
+            "For spending charts or category comparisons, call ynab_get_spending_report for each requested month. Never treat ynab_get_month activity as spending: it includes credit-card payment bookkeeping. Use only reconciled reports; do not substitute partial transaction totals after a failure. Preserve negative net values/credits, exact dates and currency; 1000 milliunits = one currency unit. Explain categorized tracking transfers separately from purchases. Use cursor pages for drill-down; never infer refund purpose from a positive amount alone.",
+        },
+      );
       server.registerTool(
         "ynab_list_plans",
         {
@@ -107,8 +114,8 @@ export function createFixtureHandler(
         "ynab_get_month",
         {
           description: live
-            ? "Read a YNAB month summary; no totals are inferred from transactions."
-            : "Read a mocked month summary; no totals are inferred from transactions.",
+            ? "Read raw YNAB budget activity and category detail. activity_milliunits includes credit-card payment bookkeeping and is NOT spending. Use ynab_get_spending_report for spending calculations and charts."
+            : "Read raw mocked budget activity, NOT spending. Use ynab_get_spending_report for spending calculations.",
           inputSchema: month.inputSchema.safeExtend({ plan_id: plan }),
           outputSchema: month.outputSchema.safeExtend(context),
           annotations,
@@ -149,8 +156,8 @@ export function createFixtureHandler(
         "ynab_list_transactions",
         {
           description: live
-            ? "Read non-pending YNAB transactions in an inclusive window of at most 90 days. Splits remain nested; transfers are not spending totals. If truncated, narrow the window or increase limit to 100; no pagination or complete retrieval guarantee."
-            : "Read invented non-pending transactions in an inclusive window of at most 90 days. Splits remain nested, transfers are not spending totals. If truncated, narrow the date window or increase limit up to 100; no pagination or complete retrieval guarantee.",
+            ? "Read non-pending YNAB transactions in an inclusive window of at most 90 days. Splits remain nested; transfers are not spending totals. Follow next_cursor until null; restart on STALE_CURSOR. Max 1000 upstream rows and bounded bytes; no unbounded-history guarantee. Use ynab_get_spending_report for totals."
+            : "Read invented non-pending transactions in an inclusive window of at most 90 days. Splits remain nested, transfers are not spending totals. Follow next_cursor until null; restart on STALE_CURSOR. Bounded upstream history; use ynab_get_spending_report for totals.",
           inputSchema: transactions.inputSchema.safeExtend({ plan_id: plan }),
           outputSchema: transactions.outputSchema.safeExtend(context),
           annotations,
@@ -164,6 +171,27 @@ export function createFixtureHandler(
             return errorResult(e);
           } finally {
             requestLog("tool", 200, "ynab_list_transactions");
+          }
+        },
+      );
+      server.registerTool(
+        "ynab_get_spending_report",
+        {
+          description:
+            "Compute an exact, reconciled monthly spending report from YNAB transactions and month categories. Use for spending charts and comparisons, not raw budget activity. month is YYYY-MM-01; call for each requested month. Returns gross outflows, category credits, net spending, separate credit-card bookkeeping and categorized tracking transfers. All amounts are integer milliunits (1000 = one currency unit). Refuses inconsistent/oversized data; never substitute partial totals. Check period_closed for unfinished months. Up to 1000 source transactions; pending excluded.",
+          inputSchema: spending.inputSchema.safeExtend({ plan_id: plan }),
+          outputSchema: spending.outputSchema.safeExtend(context),
+          annotations,
+        },
+        async (args, ctx) => {
+          try {
+            return await run((c) =>
+              spending.getSpendingReport(c, args, ctx.mcpReq.signal),
+            );
+          } catch (e) {
+            return errorResult(e);
+          } finally {
+            requestLog("tool", 200, "ynab_get_spending_report");
           }
         },
       );

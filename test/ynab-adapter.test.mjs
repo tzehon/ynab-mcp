@@ -161,7 +161,7 @@ test("strict arguments, calendar dates, month start and inclusive window enforce
     { limit: 101 },
     { limit: 1.5 },
     { limit: "2" },
-    { cursor: "x" },
+    { cursor: "" },
     { url: "x" },
     { last_knowledge_of_server: 1 },
   ])
@@ -270,7 +270,18 @@ test("month is direct upstream mapping without inferred totals and validates its
     month: "2026-11-01",
     income_milliunits: 3000000,
     assigned_milliunits: 2500000,
-    activity_milliunits: -12500,
+    activity_milliunits: -24500,
+    activity_is_spending: false,
+    category_activity: [
+      {
+        id: "a0000000-0000-4000-8000-000000000003",
+        category_group_id: "a0000000-0000-4000-8000-000000000002",
+        name: "Invented essentials",
+        hidden: false,
+        internal: false,
+        activity_milliunits: -24500,
+      },
+    ],
     ready_to_assign_milliunits: 500000,
   });
   for (const [edit, expected] of [
@@ -532,7 +543,18 @@ test("all raw cardinality caps apply before deletion/filtering with exact bounda
         }));
       },
     ],
-    ["month", 1000, (d, n) => (d.data.month.categories = Array(n).fill(null))],
+    [
+      "month",
+      1000,
+      (d, n) => {
+        const c = d.data.month.categories[0];
+        d.data.month.categories = Array.from({ length: n }, (_, i) => ({
+          ...c,
+          id: uid(i),
+          deleted: true,
+        }));
+      },
+    ],
     [
       "transactions",
       1000,
@@ -823,10 +845,17 @@ test("real HTTP requests share process admission across server factories", async
   // independently of the separate authentication budget and SDK notifications.
   // Calls remain pending together; rejection handlers also survive early failure.
   for (let i = 0; i < 4; i++) {
-    pendingCalls.push((i % 2 ? c : d).callTool({
-      name: "ynab_list_accounts",
-      arguments: { plan_id },
-    }).then(value => ({ value }), error => ({ error })));
+    pendingCalls.push(
+      (i % 2 ? c : d)
+        .callTool({
+          name: "ynab_list_accounts",
+          arguments: { plan_id },
+        })
+        .then(
+          (value) => ({ value }),
+          (error) => ({ error }),
+        ),
+    );
     const deadline = performance.now() + 1500;
     while (calls < i + 1 && performance.now() < deadline)
       await new Promise((r) => setTimeout(r, 5));
@@ -842,7 +871,9 @@ test("real HTTP requests share process admission across server factories", async
   const outcomes = await Promise.all(pendingCalls);
   assert.ok(
     outcomes.every(
-      (r) => !r.error && JSON.parse(r.value.content[0].text).error.code === "UPSTREAM_TIMEOUT",
+      (r) =>
+        !r.error &&
+        JSON.parse(r.value.content[0].text).error.code === "UPSTREAM_TIMEOUT",
     ),
   );
 });

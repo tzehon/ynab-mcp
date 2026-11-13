@@ -18,6 +18,17 @@ export async function getMonth(
         income_milliunits: data.income,
         assigned_milliunits: data.budgeted,
         activity_milliunits: data.activity,
+        activity_is_spending: false,
+        category_activity: data.categories
+          .filter((c) => !c.deleted)
+          .map((c) => ({
+            id: c.id,
+            category_group_id: c.category_group_id,
+            name: c.name,
+            hidden: c.hidden,
+            internal: c.internal,
+            activity_milliunits: c.activity,
+          })),
         ready_to_assign_milliunits: data.to_be_budgeted,
       },
     });

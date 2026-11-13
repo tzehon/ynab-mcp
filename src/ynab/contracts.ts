@@ -65,6 +65,7 @@ export const group = z.object({
   deleted: z.boolean(),
   categories: z.array(category),
 });
+export const monthCategory = category.extend({ activity: integer });
 export const month = z.object({
   month: date,
   income: integer,
@@ -72,7 +73,7 @@ export const month = z.object({
   activity: integer,
   to_be_budgeted: integer,
   deleted: z.boolean(),
-  categories: z.array(z.unknown()),
+  categories: z.array(monthCategory),
 });
 const nullableFields = {
   payee_id: nullable(uuid),

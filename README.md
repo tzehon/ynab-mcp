@@ -61,7 +61,7 @@ npm run smoke:auth-fixtures -- --mode dev
 ```
 
 Each run generates disposable RSA keys in memory, writes only a public fixture
-bundle to temporary scratch, starts the protected service, exercises all five
+bundle to temporary scratch, starts the protected service, exercises all six
 tools in both protocol eras and missing/expired/wrong-owner rejection, then shuts
 down and cleans up. It prints only fixed success/failure labels. This is a local
 mock test, not Auth0 login or actual Codex/ChatGPT acceptance.
@@ -109,7 +109,7 @@ Auth0 setup must configure and independently verify the selected profile.
 `smoke:mcp -- --url http://127.0.0.1:3000/mcp` reads one bounded synthetic token
 from stdin; never put it in command arguments or logged environment variables.
 The harness pipes it privately. Smoke requires at least one built-in allowed
-plan, checks all five tools in both protocol eras, and emits no financial data.
+plan, checks all six tools in both protocol eras, and emits no financial data.
 It limits HTTP operations to 5 seconds and the run to 20 seconds. No application
 endpoint mints tokens. Stop the manual service with Ctrl-C or SIGTERM.
 
@@ -150,7 +150,7 @@ fallback, token cache, persistent cache or outbound auth retrieval exists.
 
 ## Mock read tools
 
-All five tools are read-only and require no service credential. The new tools
+All six tools are read-only and require no service credential. The new tools
 accept strict arguments with the existing public `fixture-plan-sgd` or
 `fixture-plan-usd` IDs. Unknown/disallowed plans fail before transport dispatch.
 The immutable fixture map supplies synthetic UUIDs, matching currency, and
@@ -160,24 +160,26 @@ The immutable fixture map supplies synthetic UUIDs, matching currency, and
 | --- | --- | --- |
 | `ynab_list_plans` | `{}` or omitted | Original allowlisted local catalog |
 | `ynab_list_accounts` | `plan_id` | Nondeleted accounts, including closed/off-budget accounts; exact balances |
-| `ynab_get_month` | `plan_id`, `month` | Direct mocked month values; day must be 01 |
+| `ynab_get_month` | `plan_id`, `month` | Raw budget activity (not spending) and category detail; day must be 01 |
 | `ynab_list_categories` | `plan_id` | Metadata only; hidden/internal flags and empty groups retained; no balances/goals/notes |
-| `ynab_list_transactions` | `plan_id`, `since_date`, `until_date`, optional `limit` | Nondeleted, non-pending records; splits nested and transfers retained |
+| `ynab_list_transactions` | `plan_id`, `since_date`, `until_date`, optional `limit`, `cursor` | Nondeleted, non-pending records; splits nested and transfers retained |
+
+| `ynab_get_spending_report` | `plan_id`, `month` | Reconciled gross/credit/net category spending; separate payment bookkeeping and tracking transfers |
 
 Dates are real `YYYY-MM-DD` values in 2000–2099. Transaction windows are inclusive,
 1–90 days; limit is an integer 1–100, default 50. Results sort date descending then
 ID ascending. `available_count` counts matching records in the bounded mock
 response; `returned_count` is emitted length and `truncated` indicates a limit cut.
-Narrow a truncated window or increase limit; there is no cursor or guarantee of
-complete retrieval through pagination. `pending_excluded: true` does not mean all
+Follow `next_cursor` with the same plan/window, or narrow an oversized window.
+A source-version change requires restarting the window; the raw cap still applies. `pending_excluded: true` does not mean all
 returned transactions are cleared or approved. Deleted children disappear without
 rebalancing their parent; transfer pairs need not both be present.
 
 Every new success has `data_mode: fixtures`, `source: mock-ynab`, public plan ID,
 currency, synthetic timestamp and truncation flag. Money remains signed safe
-integer `*_milliunits` (1000 = one currency unit). No rounding, currency conversion,
-spending classification, cross-record totals or transaction-derived month totals
-are performed. Instruction-like names/memos remain inert JSON text.
+integer `*_milliunits` (1000 = one currency unit). No rounding or currency conversion is performed. The spending report aggregates
+complete bounded transactions, reconciles each category and separates bookkeeping;
+see [spending semantics and verification](docs/spending.md). Instruction-like names/memos remain inert JSON text.
 
 The injected mock consumes fixed GET descriptors for accounts, months, categories
 and transactions at the YNAB origin **without issuing network requests**. It returns
@@ -371,7 +373,7 @@ npm run smoke:auth-integrated -- --mode dev
 The harness generates private synthetic keys in a temporary owner-only directory,
 starts the independent loopback mock, runs the actual start/dev process and
 submits the real consent forms for public-native and confidential-web clients.
-It exercises all five tools through both official SDK protocol eras and removes
+It exercises all six tools through both official SDK protocol eras and removes
 its temporary state. Only a fixed pass/fail line is printed by the command.
 
 For implementation tests, AUTH_MODE=integrated-mock requires the usual fixture

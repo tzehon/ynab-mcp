@@ -67,8 +67,8 @@ function documents(prefix: string, factor: number) {
     internal: false,
     deleted: false,
     budgeted: 500000,
-    activity: -12500,
-    balance: 487500,
+    activity: -24500 * factor,
+    balance: 500000 - 24500 * factor,
   };
   const base = {
     date: "2026-11-03",
@@ -122,7 +122,7 @@ function documents(prefix: string, factor: number) {
           month: "2026-11-01",
           income: 3000000 * factor,
           budgeted: 2500000 * factor,
-          activity: -12500 * factor,
+          activity: -24500 * factor,
           to_be_budgeted: 500000 * factor,
           deleted: false,
           categories: [category],

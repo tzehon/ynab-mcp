@@ -16,13 +16,21 @@ replaces the previous selection; leaving it empty denies all budget reads.
 New YNAB plans never become available automatically. Refresh `ynab_list_plans`
 in the client after saving. Changing the selection invalidates in-flight reads.
 
-The five tools have the same financial projections as fixture mode. Live outputs
+The six tools have the same financial projections as fixture mode. Live outputs
 say `data_mode: live`, `source: ynab`, use real selected plan UUIDs, the selected
 plan currency, and a retrieval timestamp. Accounts and month values use exact
 integer milliunits. Category output is metadata only. Transactions exclude
 pending items, preserve nested splits and permit a 1–90-day inclusive window
-with up to 100 results. If truncated, narrow the date window; the service does
-not guarantee complete history. Invalid or oversized responses fail safely.
+with up to 100 results per page. Follow `next_cursor` using the exact same plan
+and date window until it is null. A stale cursor requires restarting that window;
+do not combine pages from different source versions. Raw input is still bounded
+at 1,000 transactions / 1 MiB per response, so complete history is not guaranteed.
+Invalid or oversized responses fail safely.
+
+Use `ynab_get_spending_report` for spending, once per requested calendar month.
+Raw `ynab_get_month.activity_milliunits` includes payment bookkeeping and is
+explicitly marked `activity_is_spending: false`. See [spending semantics and
+verification](spending.md).
 
 The server stores only encrypted authorization and minimal selected-plan
 metadata. It does not persist financial responses. Client conversations can

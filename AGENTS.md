@@ -21,6 +21,16 @@ preserve their separate I/O guards and meaningful negative controls. See
 [docs/live-tools.md](docs/live-tools.md). Historical slice restrictions below apply
 to their original modes; they do not prohibit this scoped hosted live path.
 
+YNAB-9 adds the reconciled monthly spending report and version-bound transaction
+pagination under the same live authorization and bounded transport. Five sequential
+provider reads share one admission slot and one three-second absolute deadline.
+Reports use complete bounded responses, checked integer arithmetic and per-category
+reconciliation; raw month activity is never spending. A failed/partial month is
+unknown, not zero. Synthetic regressions and actual private owner-data acceptance
+are both required. Keep financial contents out of Git/Jira/logs. See
+[docs/spending.md](docs/spending.md). This scoped exception supersedes historical
+five-tool/no-aggregate limitations without relaxing old fixture I/O guards.
+
 ## Existing workflow and technical constraints
 
 Jira is authoritative for current intent, Spec, Plan, Acceptance criteria and

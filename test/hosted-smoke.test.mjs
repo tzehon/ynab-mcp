@@ -1,12 +1,12 @@
-import { mapped, other } from "./helpers/ynab-http.mjs";
 import assert from "node:assert/strict";
+import { createHash, randomBytes } from "node:crypto";
+import test from "node:test";
 import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
-import { randomBytes, createHash } from "node:crypto";
-import test from "node:test";
 import { hostedApp } from "./helpers/hosted-app.mjs";
+import { mapped, other } from "./helpers/ynab-http.mjs";
 
 for (const live of [false, true])
   for (const profile of ["native", "web", "basic"])
@@ -121,12 +121,13 @@ for (const live of [false, true])
         assert.equal(r.status, 200, r.text);
         assert.match(r.text, /Invented &lt;plan&gt; &amp; &quot;name&quot;/);
         const csrf = r.text.match(/name="csrf" value="([^"]+)"/)[1];
-        const save = (values, origin = h.origin) =>
+        const save = (values, origin = h.origin, navigation = {}) =>
           browser.fetch("/connection/plans", {
             method: "POST",
             headers: {
               origin,
               "content-type": "application/x-www-form-urlencoded",
+              ...navigation,
             },
             body: new URLSearchParams(values).toString(),
           });
@@ -162,9 +163,76 @@ for (const live of [false, true])
           (await save({ csrf, plan_id: mapped, extra: "denied" })).status,
           400,
         );
-        r = await save({ csrf, plan_id: mapped });
+        const navigation = {
+          "sec-fetch-site": "same-origin",
+          "sec-fetch-mode": "navigate",
+          "sec-fetch-dest": "document",
+        };
+        // Real Chromium form POSTs from our no-referrer pages use Origin:null.
+        // A complete navigation tuple still cannot replace owner/CSRF checks.
+        assert.equal(
+          (await save({ csrf, plan_id: mapped }, "null")).status,
+          403,
+        );
+        for (const key of Object.keys(navigation)) {
+          const missing = { ...navigation };
+          delete missing[key];
+          assert.equal(
+            (await save({ csrf, plan_id: mapped }, "null", missing)).status,
+            403,
+          );
+        }
+        for (const changed of [
+          { "sec-fetch-site": "cross-site" },
+          { "sec-fetch-site": "none" },
+          { "sec-fetch-mode": "cors" },
+          { "sec-fetch-dest": "empty" },
+        ]) {
+          assert.equal(
+            (
+              await save({ csrf, plan_id: mapped }, "null", {
+                ...navigation,
+                ...changed,
+              })
+            ).status,
+            403,
+          );
+        }
+        assert.equal(
+          (
+            await save(
+              { csrf, plan_id: mapped },
+              "https://evil.example",
+              navigation,
+            )
+          ).status,
+          403,
+        );
+        assert.equal(
+          (await save({ csrf: "wrong", plan_id: mapped }, "null", navigation))
+            .status,
+          400,
+        );
+        assert.equal(
+          (
+            await anonymous.fetch("/connection/plans", {
+              method: "POST",
+              headers: {
+                origin: "null",
+                "content-type": "application/x-www-form-urlencoded",
+                ...navigation,
+              },
+              body: new URLSearchParams({ csrf, plan_id: mapped }).toString(),
+            })
+          ).status,
+          400,
+        );
+        r = await save({ csrf, plan_id: mapped }, "null", navigation);
         assert.equal(r.status, 200, r.text);
-        assert.equal((await save({ csrf, plan_id: mapped })).status, 400);
+        assert.equal(
+          (await save({ csrf, plan_id: mapped }, "null", navigation)).status,
+          400,
+        );
       }
       const mcp = (body) =>
         browser.fetch("/mcp", {

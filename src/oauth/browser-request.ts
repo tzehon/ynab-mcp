@@ -12,7 +12,7 @@ export function sameOriginForm(req: IncomingMessage, enrollment = false) {
     req.headers["sec-fetch-mode"] === "navigate" &&
     req.headers["sec-fetch-dest"] === "document" &&
     ((enrollment && req.url === "/enroll") ||
-      /^\/(?:interaction\/[A-Za-z0-9_-]+|connection\/(?:refresh|disconnect))$/.test(
+      /^\/(?:interaction\/[A-Za-z0-9_-]+|connection\/(?:refresh|disconnect|plans))$/.test(
         req.url ?? "",
       ))
   );

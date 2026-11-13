@@ -417,3 +417,72 @@ test("monthly raw cap rejects oversized input before report aggregation", async 
   }));
   await assert.rejects(report(d), code("UPSTREAM_RESPONSE_TOO_LARGE"));
 });
+
+test("deleted split children are ignored only when remaining children still reconcile", async () => {
+  const d = docs(),
+    parent = d.transactions.data.transactions[1];
+  parent.subtransactions.push({
+    ...parent.subtransactions[0],
+    id: "deleted-child",
+    amount: -700,
+    deleted: true,
+  });
+  assert.equal((await report(d)).totals.net_spending_milliunits, 24500);
+  parent.subtransactions[0].deleted = true;
+  await assert.rejects(report(d), code("SPENDING_RECONCILIATION_FAILED"));
+});
+test("cursor tampering with plan or last row cannot cross its bound window", async () => {
+  const { c } = client();
+  const page = (await listTransactions(c, { ...window, limit: 1 }))
+    .structuredContent;
+  const original = JSON.parse(
+    Buffer.from(page.next_cursor, "base64url").toString(),
+  );
+  for (const patch of [
+    { p: "fixture-plan-usd" },
+    { id: "missing-row" },
+    { k: 999 },
+    { extra: true },
+  ]) {
+    const cursor = Buffer.from(
+      JSON.stringify({ ...original, ...patch }),
+    ).toString("base64url");
+    await assert.rejects(
+      listTransactions(c, { ...window, cursor }),
+      code("STALE_CURSOR"),
+    );
+  }
+});
+test("four reports occupy four slots; fifth fails before dispatch and cancellation frees capacity", async () => {
+  const budget = new AdmissionBudget(),
+    ac = new AbortController();
+  let calls = 0;
+  const c = new MockYnabClient(
+    parseConfig(fixtureEnv),
+    async () => {
+      calls++;
+      return new Promise(() => {});
+    },
+    budget,
+  );
+  const pending = Array.from({ length: 4 }, () =>
+    getSpendingReport(c, args, ac.signal),
+  );
+  await new Promise((r) => setImmediate(r));
+  assert.equal(calls, 4);
+  await assert.rejects(getSpendingReport(c, args), code("BUSY"));
+  assert.equal(calls, 4);
+  ac.abort();
+  await Promise.all(
+    pending.map((p) => assert.rejects(p, code("UPSTREAM_TIMEOUT"))),
+  );
+  const ok = new MockYnabClient(
+    parseConfig(fixtureEnv),
+    fixtureTransport,
+    budget,
+  );
+  assert.equal(
+    (await getSpendingReport(ok, args)).structuredContent.complete,
+    true,
+  );
+});

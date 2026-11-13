@@ -101,7 +101,8 @@ export async function hostedService(
             typeof claims.sub !== "string"
           )
             fail();
-          lifecycle.check();
+          if (live) lifecycle.checkAuthorization();
+          else lifecycle.check();
           engine.families.check(
             claims.grant_id,
             claims.client_id,

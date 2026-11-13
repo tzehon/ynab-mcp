@@ -11,7 +11,7 @@ import { hostedApp } from "./helpers/hosted-app.mjs";
 for (const live of [false, true])
   for (const profile of ["native", "web", "basic"])
     test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, five tools and disconnect`, async (t) => {
-      const { h, e, seen } = await hostedApp(t, {
+      const { h, e, seen, control } = await hostedApp(t, {
         live,
         method:
           profile === "basic" ? "client_secret_basic" : "client_secret_post",
@@ -177,6 +177,35 @@ for (const live of [false, true])
           },
           body: JSON.stringify(body),
         });
+      if (live) {
+        const before = seen.filter(
+          (u) => u === "https://app.ynab.com/oauth/token",
+        ).length;
+        control.tokenDelay = 80;
+        const reads = await Promise.all(
+          [1, 2].map((id) =>
+            mcp({
+              jsonrpc: "2.0",
+              id: 100 + id,
+              method: "tools/call",
+              params: {
+                name: "ynab_list_accounts",
+                arguments: { plan_id: mapped },
+              },
+            }),
+          ),
+        );
+        for (const result of reads) {
+          assert.equal(result.status, 200, result.text);
+          assert.notEqual(result.json().result.isError, true, result.text);
+        }
+        assert.equal(
+          seen.filter((u) => u === "https://app.ynab.com/oauth/token").length -
+            before,
+          1,
+        );
+        control.tokenDelay = 0;
+      }
       r = await mcp({
         jsonrpc: "2.0",
         id: 1,
@@ -270,10 +299,14 @@ for (const live of [false, true])
         assert.equal(
           seen.filter((u) => u.startsWith("https://api.ynab.com/v1/plans"))
             .length,
-          9,
+          11,
         );
       assert.deepEqual(
-        seen.filter((u) => !u.startsWith("https://api.ynab.com/v1/plans")),
+        [
+          ...new Set(
+            seen.filter((u) => !u.startsWith("https://api.ynab.com/v1/plans")),
+          ),
+        ],
         ["https://app.ynab.com/oauth/token", "https://api.ynab.com/v1/user"],
       );
       r = await browser.fetch("/connection");

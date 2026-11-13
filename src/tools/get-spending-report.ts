@@ -200,7 +200,7 @@ export async function getSpendingReport(
         } else if (
           g.internal &&
           g.name !== "Hidden Categories" &&
-          g.name !== "Internal Master Category"
+          !(g.name === "Internal Master Category" && c.internal)
         ) {
           if (c.activity !== 0) fail();
           continue;

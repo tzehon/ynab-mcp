@@ -1,5 +1,9 @@
 # ynab-mcp
 
+The [injected read-only HTTP transport](docs/ynab-http-transport.md) provides a
+bounded adapter tested against local mock servers. It is not wired into runtime
+modes; all current tools still serve fixtures.
+
 Hosted integrated authorization is under development in YNAB-6. See
 [hosting](docs/hosting.md) and [recovery](docs/recovery.md) for the explicit mode,
 private enrollment and release gates. All tools still use synthetic fixtures.

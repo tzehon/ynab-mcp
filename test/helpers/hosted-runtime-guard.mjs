@@ -216,7 +216,19 @@ for (const name of [
   "spawnSync",
 ])
   cp[name] = deny;
+const livePaths = new Set([
+  "/v1/plans",
+  ...[
+    "accounts",
+    "categories",
+    "months/2026-11-01",
+    "transactions?since_date=2026-11-01&until_date=2026-11-07",
+  ].map((tail) => `/v1/plans/11111111-1111-4111-8111-111111111111/${tail}`),
+]);
 const allowed = (url, method) =>
+  (process.env.HOSTED_TEST_LIVE === "true" &&
+    method === "GET" &&
+    [...livePaths].some((path) => url === `https://api.ynab.com${path}`)) ||
   (url === "https://app.ynab.com/oauth/token" && method === "POST") ||
   (url === "https://api.ynab.com/v1/user" && method === "GET");
 const fetcher = globalThis.fetch;

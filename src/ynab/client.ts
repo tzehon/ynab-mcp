@@ -1,21 +1,23 @@
 import type { z } from "zod";
 import type { Config } from "../config.js";
+import {
+  monthInput,
+  parseInput,
+  fixturePlanId,
+  planInput,
+  transactionsInput,
+} from "../tools/contracts.js";
 import { ToolError } from "../tools/errors.js";
 import {
-  planInput,
-  monthInput,
-  transactionsInput,
-  parseInput,
-} from "../tools/contracts.js";
-import { CallLimits, type AdmissionBudget } from "./limits.js";
-import { descriptor, type MockTransport, type Operation } from "./transport.js";
-import {
-  MAX_BODY,
   accountsResponse,
-  monthResponse,
   categoriesResponse,
+  MAX_BODY,
+  uuid,
+  monthResponse,
   transactionsResponse,
 } from "./contracts.js";
+import { type AdmissionBudget, CallLimits } from "./limits.js";
+import { descriptor, type MockTransport, type Operation } from "./transport.js";
 
 function cap(value: unknown, max: number) {
   if (Array.isArray(value) && value.length > max)
@@ -95,17 +97,37 @@ async function collect(
     if (!complete) cancel();
   }
 }
+export type ClientSnapshot = {
+  lookup: (id: string) => {
+    mapped_id: string;
+    currency_code: string;
+    as_of: string;
+  };
+  check: () => void;
+};
 export class MockYnabClient {
   private limits: CallLimits;
   constructor(
     readonly config: Config,
     private transport: MockTransport,
     budget?: AdmissionBudget,
+    private live?: ClientSnapshot,
   ) {
     if (typeof transport !== "function") throw new ToolError("INTERNAL_ERROR");
     this.limits = new CallLimits(budget);
   }
   context(plan: string) {
+    if (this.live) {
+      this.live.check();
+      const entry = this.live.lookup(plan);
+      return {
+        data_mode: "live" as const,
+        source: "ynab" as const,
+        plan_id: plan,
+        currency_code: entry.currency_code,
+        as_of: new Date().toISOString(),
+      };
+    }
     if (
       !this.config.allowedIds.includes(plan) ||
       !Object.hasOwn(this.config.fixtureMap, plan)
@@ -134,7 +156,8 @@ export class MockYnabClient {
     signal?: AbortSignal,
   ): Promise<R> {
     this.context(args.plan_id);
-    const entry = this.config.fixtureMap[args.plan_id];
+    const entry =
+      this.live?.lookup(args.plan_id) ?? this.config.fixtureMap[args.plan_id];
     if (!entry) throw new ToolError("PLAN_NOT_ALLOWED");
     return this.limits.run(signal, async (abort, check) => {
       let receiving = true;
@@ -167,7 +190,9 @@ export class MockYnabClient {
         const parsed = schema.safeParse(raw);
         if (!parsed.success) throw new ToolError("UPSTREAM_INVALID_RESPONSE");
         check();
+        this.live?.check();
         const result = project(parsed.data);
+        this.live?.check();
         check();
         return result;
       } catch (error) {
@@ -185,7 +210,10 @@ export class MockYnabClient {
       data: z.infer<typeof accountsResponse>["data"]["accounts"];
     }) => R,
   ) {
-    const args = parseInput(planInput, value);
+    const args = parseInput(
+      planInput.safeExtend({ plan_id: this.live ? uuid : fixturePlanId }),
+      value,
+    );
     return this.request(
       "accounts",
       args,
@@ -205,7 +233,10 @@ export class MockYnabClient {
       data: z.infer<typeof monthResponse>["data"]["month"];
     }) => R,
   ) {
-    const args = parseInput(monthInput, value);
+    const args = parseInput(
+      monthInput.safeExtend({ plan_id: this.live ? uuid : fixturePlanId }),
+      value,
+    );
     return this.request(
       "month",
       args,
@@ -227,7 +258,10 @@ export class MockYnabClient {
       data: z.infer<typeof categoriesResponse>["data"]["category_groups"];
     }) => R,
   ) {
-    const args = parseInput(planInput, value);
+    const args = parseInput(
+      planInput.safeExtend({ plan_id: this.live ? uuid : fixturePlanId }),
+      value,
+    );
     return this.request(
       "categories",
       args,
@@ -258,7 +292,12 @@ export class MockYnabClient {
       data: z.infer<typeof transactionsResponse>["data"]["transactions"];
     }) => R,
   ) {
-    const args = parseInput(transactionsInput, value);
+    const args = parseInput(
+      transactionsInput.safeExtend({
+        plan_id: this.live ? uuid : fixturePlanId,
+      }),
+      value,
+    );
     return this.request(
       "transactions",
       args,

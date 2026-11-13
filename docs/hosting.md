@@ -170,3 +170,7 @@ disconnect/reconnect and a fresh profile or second machine. SDK tests do not pro
 those outcomes. Record deadlines privately and leave unobserved live criteria
 pending. A merge leaves the issue Ready to release until all hosted criteria pass.
 See [recovery](recovery.md) before release.
+
+## Owner-selected live tools
+
+After enrollment, follow [live setup](live-tools.md) to enable the explicit live mode and choose plans. Keep enrollment closed until reviewed code, public policy links, provider logging and private storage checks pass. Retain the existing cost-stop controls and recovery procedure.

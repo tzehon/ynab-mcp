@@ -1,3 +1,5 @@
+import { fixtureDocuments } from "../../dist/fixtures/ynab.js";
+import { mapped, other } from "./ynab-http.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync } from "node:fs";
@@ -13,7 +15,7 @@ import { Enrollment } from "../../dist/oauth/enrollment.js";
 import { providerHarness } from "./hosted-provider.mjs";
 export async function hostedApp(
   t,
-  { bootstrap = false, method = "client_secret_post" } = {},
+  { bootstrap = false, method = "client_secret_post", live = false } = {},
 ) {
   const h = await providerHarness(t),
     dir = join(h.root, "app-state"),
@@ -85,6 +87,11 @@ export async function hostedApp(
       OAUTH_ENROLLMENT_EXPIRES: String(Date.now() + 900000),
     });
   }
+  if (live) {
+    e.DATA_MODE = "live";
+    e.LIVE_YNAB_ENABLED = "true";
+    delete e.FIXTURE_ALLOWED_PLAN_IDS;
+  }
   const parsed = parseConfig(e);
   // Only the test factory changes local listener/store locations. No such env
   // override is accepted by parseConfig or the executable entry point.
@@ -125,6 +132,45 @@ export async function hostedApp(
         req.method === "GET"
       ) {
         res.end(JSON.stringify({ data: { user: { id: control.owner } } }));
+      } else if (
+        live &&
+        req.headers.host === "api.ynab.com" &&
+        req.method === "GET" &&
+        req.url.startsWith("/v1/plans")
+      ) {
+        assert.equal(
+          req.headers.authorization,
+          "Bearer invented-upstream-access",
+        );
+        assert.equal(req.headers.cookie, undefined);
+        if (req.url === "/v1/plans")
+          res.end(
+            JSON.stringify({
+              data: {
+                plans: [
+                  {
+                    id: mapped,
+                    name: 'Invented <plan> & "name"',
+                    currency_format: { iso_code: "SGD" },
+                  },
+                  {
+                    id: other,
+                    name: "Other invented plan",
+                    currency_format: { iso_code: "USD" },
+                  },
+                ],
+              },
+            }),
+          );
+        else {
+          assert(req.url.startsWith(`/v1/plans/${mapped}/`));
+          const tail = req.url.split("/")[4].split("?")[0];
+          res.end(
+            JSON.stringify(
+              fixtureDocuments[mapped][tail === "months" ? "month" : tail],
+            ),
+          );
+        }
       } else {
         res.statusCode = 403;
         res.end("{}");
@@ -143,7 +189,7 @@ export async function hostedApp(
           hostname: "127.0.0.1",
           servername: "",
           port: provider.address().port,
-          path: u.pathname,
+          path: u.pathname + u.search,
           method: init.method,
           ca: readFileSync(join(h.root, "cert")),
           signal: init.signal,

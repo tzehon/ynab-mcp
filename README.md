@@ -424,3 +424,7 @@ a separate owner-session cookie rotates on completed authorization. Binding
 cookies alone never authorize connection controls. HTTP regression tests cover
 both tabs completing, preselected-cookie rejection and hostile navigation headers;
 real Chromium consent, denial, refresh and disconnect were also manually verified.
+
+## Live owner integration
+
+See [live setup and limits](docs/live-tools.md), [service information](docs/public-service/README.md) and [privacy policy](docs/public-service/PRIVACY.md). Actual hosted/client qualification is tracked separately from synthetic test results.

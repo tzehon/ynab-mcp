@@ -1,8 +1,8 @@
 import type { Config } from "./config.js";
-import { createFixtureHttp } from "./http.js";
 import { Admission } from "./http/admission.js";
 import { hostedBoundary } from "./http/hosted-boundary.js";
 import { hostedPublicPage } from "./http/hosted-pages.js";
+import { createFixtureHttp } from "./http.js";
 import { sameOriginForm } from "./oauth/browser-request.js";
 import { fail } from "./oauth/crypto.js";
 import { hostedService } from "./oauth/hosted-service.js";
@@ -16,11 +16,12 @@ export async function createHostedHttp(
 ) {
   const hosted = config.hosted;
   if (!hosted) fail();
-  const service = await hostedService(hosted, fetcher),
+  const service = await hostedService(hosted, fetcher, config),
     admission = new Admission();
   try {
     const app = createFixtureHttp(config, undefined, undefined, undefined, {
       oauth: service,
+      live: service.live,
       before: (req, res) => {
         securityHeaders(res);
         res.setHeader("Strict-Transport-Security", "max-age=31536000");

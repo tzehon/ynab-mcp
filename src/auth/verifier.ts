@@ -29,7 +29,7 @@ export class Authenticator {
   async authenticate(
     header: string | undefined,
     signal: AbortSignal,
-  ): Promise<void> {
+  ): Promise<() => void> {
     if (this.closed || signal.aborted || activeAuthentications >= 4)
       throw new AuthError("unavailable");
     if (header === undefined) throw new AuthError("missing");
@@ -45,6 +45,7 @@ export class Authenticator {
     this.controllers.add(controller);
     const combined = AbortSignal.any([signal, controller.signal]);
     const timer = setTimeout(() => controller.abort(), 2000);
+    let recheck: (() => void) | undefined;
     const work = (async () => {
       try {
         await verifyBearerToken(header, {
@@ -128,6 +129,17 @@ export class Authenticator {
                   : [];
               if (!scopes.includes("ynab:read")) throw new AuthError("scope");
               this.grant?.(p);
+              const claims = Object.freeze({
+                sub: p.sub,
+                client_id: p.client_id,
+                grant_id: p.grant_id,
+              });
+              const expires = p.exp;
+              recheck = () => {
+                if (this.closed || expires <= this.date().getTime() / 1000)
+                  invalid();
+                this.grant?.(claims);
+              };
               // SDK's transient token-bearing value never leaves this auth boundary.
               return {
                 token,
@@ -154,6 +166,8 @@ export class Authenticator {
       .catch(() => {});
     try {
       await abortable(work, combined);
+      if (!recheck) invalid();
+      return recheck;
     } finally {
       clearTimeout(timer);
       controller.abort();

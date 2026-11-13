@@ -1,6 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { join } from "node:path";
 import { createLocalJWKSet } from "jose";
+import type { Config } from "../config.js";
+import type { LiveService } from "../ynab/live-service.js";
 import { fail } from "./crypto.js";
 import { Enrollment } from "./enrollment.js";
 import { hostedAdmin } from "./hosted-admin.js";
@@ -17,9 +19,11 @@ import { Store } from "./store.js";
 export async function hostedService(
   config: HostedConfig,
   fetcher: typeof fetch = fetch,
+  application?: Config,
 ) {
   const keys = hostedKeys(config.keyBundle),
     claim = claimProcess(join(config.dir, "owner.lock"));
+  let live: LiveService | undefined;
   let store: Store | undefined,
     admin: Awaited<ReturnType<typeof hostedAdmin>> | undefined;
   const upstream = new HostedUpstream(
@@ -45,8 +49,13 @@ export async function hostedService(
       config.enrollment.kind === "owner"
         ? new HostedLifecycle(store, upstream, config.enrollment.owner)
         : undefined;
+    if (config.dataMode === "live") {
+      if (!lifecycle || !application) fail();
+      const { LiveService } = await import("../ynab/live-service.js");
+      live = new LiveService(application, store, lifecycle, fetcher);
+    }
     const engine = lifecycle
-      ? hostedEngine(config, keys, store, upstream, lifecycle)
+      ? hostedEngine(config, keys, store, upstream, lifecycle, live)
       : undefined;
     const bootstrap = new EnrollmentHttp(config, store, enrollment, upstream);
     admin = await hostedAdmin(config.runtimeDir, enrollment);
@@ -66,6 +75,7 @@ export async function hostedService(
       closing = false;
     return {
       enrollment: config.enrollment.kind === "enroll",
+      live,
       ready() {
         if (
           closing ||
@@ -170,6 +180,7 @@ export async function hostedService(
       },
       async close() {
         closing = true;
+        live?.close();
         upstream.close();
         while (active) await new Promise((r) => setTimeout(r, 10));
         await admin?.close();
@@ -178,6 +189,7 @@ export async function hostedService(
       },
     };
   } catch (error) {
+    live?.close();
     upstream.close();
     await admin?.close();
     store?.close();

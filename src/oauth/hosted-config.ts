@@ -2,6 +2,7 @@ import { ConfigError } from "../errors.js";
 
 export type HostedConfig = Readonly<{
   mode: "integrated-hosted";
+  dataMode?: "fixtures" | "live";
   origin: string;
   dir: "/data/authorization";
   runtimeDir: "/run/ynab-mcp";
@@ -35,7 +36,7 @@ export function hostedConfig(
     throw new ConfigError("AUTH_MODE");
   if (
     env.NODE_ENV !== "production" ||
-    env.DATA_MODE !== "fixtures" ||
+    !["fixtures", "live"].includes(env.DATA_MODE ?? "") ||
     env.LOCAL_FIXTURE_MODE !== undefined
   )
     throw new ConfigError("NODE_ENV");
@@ -156,7 +157,17 @@ export function hostedConfig(
       throw new ConfigError("OAUTH_ENROLLMENT_CAPABILITY");
     enrollment = { kind: "enroll", capability, expires, issuance };
   }
+  if (env.DATA_MODE === "live") {
+    if (
+      env.LIVE_YNAB_ENABLED !== "true" ||
+      enrollment.kind !== "owner" ||
+      env.FIXTURE_ALLOWED_PLAN_IDS !== undefined
+    )
+      throw new ConfigError("LIVE_YNAB_ENABLED");
+  } else if (env.LIVE_YNAB_ENABLED !== undefined)
+    throw new ConfigError("LIVE_YNAB_ENABLED");
   return Object.freeze({
+    dataMode: env.DATA_MODE as "fixtures" | "live",
     mode: "integrated-hosted",
     origin,
     dir: "/data/authorization",

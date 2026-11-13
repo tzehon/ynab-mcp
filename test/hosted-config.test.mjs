@@ -176,3 +176,16 @@ test("ownership claim never steals another process or crash residue and checks r
   symlinkSync(nested, path);
   assert.throws(() => claimProcess(path));
 });
+
+test("live mode requires all explicit switches and enrolled owner, excludes fixture allowlist", () => {
+  const live = { ...env(), DATA_MODE: "live", LIVE_YNAB_ENABLED: "true" };
+  assert.equal(hostedConfig(live).dataMode, "live");
+  for (const change of [
+    { LIVE_YNAB_ENABLED: undefined },
+    { AUTH_ALLOWED_SUBJECT: undefined },
+    { FIXTURE_ALLOWED_PLAN_IDS: "[]" },
+    { LOCAL_FIXTURE_MODE: "true" },
+    { DATA_MODE: "fixtures" },
+  ])
+    assert.throws(() => hostedConfig({ ...live, ...change }));
+});

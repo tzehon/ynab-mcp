@@ -12,9 +12,14 @@ code/security reviews, required checks, secret/privacy boundaries and agreed cos
 limits. Ask only when required human intervention or an out-of-scope commitment
 is needed. Never label an unverified acceptance criterion passed.
 
-YNAB-7 adds an injected read-only HTTP transport tested only against local mocks.
-It must remain absent from all application entrypoint graphs until a later live
-integration scope is recorded. It does not expand existing runtime I/O guards.
+YNAB-8 is the recorded live integration scope. Hosted production may explicitly
+activate DATA_MODE=live with LIVE_YNAB_ENABLED=true and a verified enrolled owner.
+Its dynamically loaded live service may use the bounded fixed-origin GET catalog
+and four selected-plan endpoints, encrypted minimal selection metadata and the
+existing upstream OAuth grant/refresh lifecycle. Old fixture modes remain synthetic;
+preserve their separate I/O guards and meaningful negative controls. See
+[docs/live-tools.md](docs/live-tools.md). Historical slice restrictions below apply
+to their original modes; they do not prohibit this scoped hosted live path.
 
 ## Existing workflow and technical constraints
 

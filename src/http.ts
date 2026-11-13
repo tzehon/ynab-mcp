@@ -9,6 +9,7 @@ import {
   buildOAuthProtectedResourceMetadata,
   getOAuthProtectedResourceMetadataUrl,
 } from "@modelcontextprotocol/server";
+import { authorizationContext } from "./auth/authorization-context.js";
 import {
   type AuthTransport,
   fixtureTransport as authFixtureTransport,
@@ -30,6 +31,7 @@ import { sameOriginForm } from "./oauth/browser-request.js";
 import { createOAuth } from "./oauth/provider.js";
 import { canonicalError } from "./tools/errors.js";
 import { MockYnabClient } from "./ynab/client.js";
+import type { LiveTools } from "./ynab/live-service.js";
 import type { MockTransport } from "./ynab/transport.js";
 
 function reply(res: ServerResponse, status: number, code: string) {
@@ -86,6 +88,7 @@ export function createFixtureHttp(
       "handle" | "close" | "verification"
     >;
     before: (req: IncomingMessage, res: ServerResponse) => boolean;
+    live?: LiveTools;
   },
 ) {
   if (config.host === "0.0.0.0" && !runtime)
@@ -126,7 +129,7 @@ export function createFixtureHttp(
     bearer_methods_supported: ["header"],
   };
   const client = new MockYnabClient(config, transport);
-  const handler = createFixtureHandler(config, client);
+  const handler = createFixtureHandler(config, client, runtime?.live);
   const guardedFetch = {
     async fetch(request: Request) {
       observeProtocol(request);
@@ -248,7 +251,10 @@ export function createFixtureHttp(
         res.end(
           req.method === "HEAD"
             ? undefined
-            : JSON.stringify({ status: "ok", data_mode: "fixtures" }),
+            : JSON.stringify({
+                status: "ok",
+                data_mode: config.hosted?.dataMode ?? "fixtures",
+              }),
         );
         return;
       }
@@ -263,10 +269,14 @@ export function createFixtureHttp(
         };
         res.once("close", disconnect);
         req.once("aborted", disconnect);
+        let checkAuthorization: (() => void) | undefined;
         try {
           try {
             if (count("authorization") > 1) throw new AuthError("invalid");
-            await auth.authenticate(req.headers.authorization, abort.signal);
+            checkAuthorization = await auth.authenticate(
+              req.headers.authorization,
+              abort.signal,
+            );
           } catch (error) {
             if (abort.signal.aborted) return;
             const response = authResponse(error, config.auth.audience);
@@ -288,7 +298,10 @@ export function createFixtureHttp(
             reply(res, 405, "METHOD_NOT_ALLOWED");
             return;
           }
-          await adapter(req, res);
+          if (!checkAuthorization) throw new AuthError("invalid");
+          await authorizationContext.run(checkAuthorization, () =>
+            adapter(req, res),
+          );
         } catch {
           if (!res.headersSent) reply(res, 500, "HTTP_FAILED");
           else res.destroy();

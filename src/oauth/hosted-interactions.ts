@@ -2,15 +2,17 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { calculatePKCECodeChallenge } from "oauth4webapi";
 import type Provider from "oidc-provider";
 import { hostedPage } from "../http/hosted-pages.js";
+import type { LiveService } from "../ynab/live-service.js";
 import { sameOriginForm } from "./browser-request.js";
-import type { HostedConfig } from "./hosted-config.js";
-import type { RefreshFamilies } from "./refresh-families.js";
 import { fail } from "./crypto.js";
-import { random } from "./lifecycle.js";
+import type { HostedConfig } from "./hosted-config.js";
 import type { HostedLifecycle } from "./hosted-lifecycle.js";
-import { readForm, securityHeaders } from "./interactions.js";
-import type { RecordValue, Store } from "./store.js";
 import type { HostedUpstream } from "./hosted-upstream.js";
+import { readForm, securityHeaders } from "./interactions.js";
+import { random } from "./lifecycle.js";
+import type { RefreshFamilies } from "./refresh-families.js";
+import type { RecordValue, Store } from "./store.js";
+
 const escapeHtml = (s: string) =>
   s.replace(
     /[&<>"']/g,
@@ -45,6 +47,7 @@ export class HostedInteractions {
     private upstream: HostedUpstream,
     private lifecycle: HostedLifecycle,
     private families: RefreshFamilies,
+    private live?: LiveService,
   ) {}
   private get owner() {
     if (this.config.enrollment.kind !== "owner") fail();
@@ -158,7 +161,7 @@ export class HostedInteractions {
         this.setCookie(res, browser);
         html(
           res,
-          `<p>Allow ${escapeHtml(flow.client)} to access ${escapeHtml(this.config.origin)}/mcp with fixture-only read permission? ${String(detail.params.scope).split(" ").includes("offline_access") ? "This includes continued access without this browser session." : "You will reconnect after the access token expires."} You can disconnect both clients from the connection page.</p><form method="post"><input type="hidden" name="csrf" value="${flow.csrf}"><button name="decision" value="continue">Continue with YNAB</button><button name="decision" value="deny">Deny</button></form>`,
+          `<p>Allow ${escapeHtml(flow.client)} to access ${escapeHtml(this.config.origin)}/mcp with ${this.live ? "read-only access to your selected YNAB plans" : "fixture-only read permission"}? ${String(detail.params.scope).split(" ").includes("offline_access") ? "This includes continued access without this browser session." : "You will reconnect after the access token expires."} You can disconnect both clients from the connection page.</p><form method="post"><input type="hidden" name="csrf" value="${flow.csrf}"><button name="decision" value="continue">Continue with YNAB</button><button name="decision" value="deny">Deny</button></form>`,
           [
             "https://app.ynab.com",
             // The engine has validated this callback. Native clients may use
@@ -250,6 +253,73 @@ export class HostedInteractions {
       redirect(res, `${this.config.origin}/interaction/${flow.uid}`);
       return true;
     }
+    if (path === "/connection/plans" && this.live) {
+      const session = this.session(req);
+      if (req.method === "GET") {
+        const abort = new AbortController();
+        const disconnected = () => {
+          if (!res.writableFinished) abort.abort();
+        };
+        res.once("close", disconnected);
+        let catalog: Awaited<ReturnType<LiveService["discover"]>>;
+        try {
+          catalog = await this.live.discover(abort.signal);
+        } finally {
+          res.off("close", disconnected);
+        }
+        const current = this.session(req);
+        if (
+          abort.signal.aborted ||
+          current.id !== session.id ||
+          current.value.generation !== catalog.generation
+        )
+          fail();
+        const csrf = random();
+        this.store.put(
+          "PlanCatalog",
+          csrf,
+          { ...catalog, browser: session.id },
+          this.store.now() + 300000,
+        );
+        html(
+          res,
+          `<h2>Choose plans</h2><p>Select up to ten plans to make available to your connected clients. Leaving all unchecked disables budget reads. Saving replaces the previous selection.</p><form method="post"><input type="hidden" name="csrf" value="${csrf}">${catalog.plans.map((p) => `<label><input type="checkbox" name="plan_id" value="${escapeHtml(p.id)}"${this.live?.selectedIds().includes(p.id) ? " checked" : ""}>${escapeHtml(p.name)} (${escapeHtml(p.currency_code)})</label><br>`).join("")}<button>Save selected plans</button></form><p><a href="/connection">Connection controls</a></p>`,
+        );
+        return true;
+      }
+      if (req.method !== "POST") fail();
+      this.post(req);
+      const form = await readForm(req, ["plan_id"]);
+      if (
+        form.getAll("csrf").length !== 1 ||
+        [...form.keys()].some((k) => k !== "csrf" && k !== "plan_id")
+      )
+        fail();
+      this.store.transaction(() => {
+        const current = this.session(req),
+          csrf = form.get("csrf") ?? "";
+        const catalog = this.store.get("PlanCatalog", csrf);
+        if (
+          !catalog ||
+          catalog.browser !== current.id ||
+          catalog.generation !== current.value.generation ||
+          typeof catalog.generation !== "string"
+        )
+          fail();
+        this.store.consume("PlanCatalog", csrf);
+        this.live?.select(
+          catalog.generation,
+          catalog.plans,
+          form.getAll("plan_id"),
+        );
+        this.store.remove("PlanCatalog", csrf);
+      });
+      html(
+        res,
+        '<p>Plan selection saved. Refresh the plan list in your client.</p><a href="/connection">Connection controls</a>',
+      );
+      return true;
+    }
     if (path === "/connection") {
       if (req.method !== "GET") fail();
       const s = this.session(req),
@@ -262,7 +332,7 @@ export class HostedInteractions {
       );
       html(
         res,
-        `<p>Connected. Tools return fixtures only. Disconnect here to remove both client grants; revoke this application separately in YNAB settings.</p><form method="post" action="/connection/refresh"><input type="hidden" name="csrf" value="${csrf}"><button>Refresh connection</button></form><form method="post" action="/connection/disconnect"><input type="hidden" name="csrf" value="${csrf}"><button>Disconnect</button></form>`,
+        `<p>Connected. ${this.live ? 'Tools can read only your selected YNAB plans. <a href="/connection/plans">Choose plans</a>.' : "Tools return fixtures only."} Disconnect here to remove both client grants; revoke this application separately in YNAB settings.</p><form method="post" action="/connection/refresh"><input type="hidden" name="csrf" value="${csrf}"><button>Refresh connection</button></form><form method="post" action="/connection/disconnect"><input type="hidden" name="csrf" value="${csrf}"><button>Disconnect</button></form>`,
       );
       return true;
     }

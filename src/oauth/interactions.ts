@@ -19,7 +19,10 @@ export function securityHeaders(
   }))
     res.setHeader(k, v);
 }
-export async function readForm(req: IncomingMessage) {
+export async function readForm(
+  req: IncomingMessage,
+  repeated: readonly string[] = [],
+) {
   if (
     req.method !== "POST" ||
     !req.headers["content-type"]?.startsWith(
@@ -36,7 +39,8 @@ export async function readForm(req: IncomingMessage) {
     chunks.push(b);
   }
   const p = new URLSearchParams(Buffer.concat(chunks).toString());
-  for (const k of p.keys()) if (p.getAll(k).length !== 1) fail();
+  for (const k of p.keys())
+    if (!repeated.includes(k) && p.getAll(k).length !== 1) fail();
   return p;
 }
 const escapeHtml = (s: string) =>

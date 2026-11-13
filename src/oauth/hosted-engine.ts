@@ -1,6 +1,8 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import Provider, { errors } from "oidc-provider";
+import type { LiveService } from "../ynab/live-service.js";
+import { fail } from "./crypto.js";
 import { hostedAdapter } from "./hosted-adapter.js";
 import type { HostedConfig } from "./hosted-config.js";
 import { HostedInteractions } from "./hosted-interactions.js";
@@ -11,7 +13,6 @@ import type { HostedUpstream } from "./hosted-upstream.js";
 import { readForm, securityHeaders } from "./interactions.js";
 import { RefreshFamilies, type Reservation } from "./refresh-families.js";
 import type { Store } from "./store.js";
-import { fail } from "./crypto.js";
 
 export function hostedEngine(
   config: HostedConfig,
@@ -19,6 +20,7 @@ export function hostedEngine(
   store: Store,
   upstream: HostedUpstream,
   lifecycle: HostedLifecycle,
+  live?: LiveService,
 ) {
   if (config.enrollment.kind !== "owner") fail();
   const owner = config.enrollment.owner,
@@ -207,6 +209,7 @@ export function hostedEngine(
     upstream,
     lifecycle,
     families,
+    live,
   );
   return {
     provider,

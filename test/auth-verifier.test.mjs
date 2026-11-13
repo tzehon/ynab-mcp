@@ -169,3 +169,33 @@ test("symmetric, unsigned and changed-signature tokens cannot substitute for RS2
       (e) => e.kind === "invalid",
     );
 });
+
+test("returned authorization capability rechecks verified expiry and grant revocation without raw token", async (t) => {
+  const { createLocalJWKSet } = await import("jose");
+  let time = now * 1000,
+    revoked = false;
+  const a = new Authenticator(
+    config,
+    fixtureTransport(bundle),
+    undefined,
+    () => new Date(time),
+    {
+      keys: { resolve: async () => createLocalJWKSet(bundle.jwks), close() {} },
+      grant: (claims) => {
+        assert(!Object.hasOwn(claims, "token"));
+        if (revoked) throw Error("REVOKED_CANARY");
+      },
+    },
+  );
+  t.after(() => a.close());
+  const check = await a.authenticate(
+    `Bearer ${await sign(url, { iat: now, exp: now + 10 })}`,
+    new AbortController().signal,
+  );
+  check();
+  revoked = true;
+  assert.throws(check);
+  revoked = false;
+  time = (now + 10) * 1000;
+  assert.throws(check);
+});

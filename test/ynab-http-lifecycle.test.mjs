@@ -62,14 +62,14 @@ test("malformed configuration accessors and non-byte stream chunks expose only f
   assert.equal(body.locked, false);
 });
 
-test("compiled application graph has no HTTP budget transport dependency", () => {
+test("static application imports exclude lazily activated live budget transport", () => {
   const seen = new Set();
   function walk(path) {
     if (seen.has(path)) return;
     seen.add(path);
     const source = readFileSync(path, "utf8");
     for (const match of source.matchAll(
-      /(?:from\s*|import\s*\(\s*|import\s*)["'](\.[^"']+)["']/g,
+      /(?:from\s*|import\s+)["'](\.[^"']+)["']/g,
     ))
       walk(resolve(dirname(path), match[1]));
   }

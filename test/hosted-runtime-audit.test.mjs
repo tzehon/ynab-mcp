@@ -74,3 +74,47 @@ test("hosted I/O guard permits only claimed storage/socket and denies alternate 
   assert.match(r.stderr, /HOSTED_GUARD.*"denied":0/);
   assert.match(r.stderr, /"database":2/);
 });
+
+test("live hosted guard admits only exact synthetic GET vocabulary and retains fixture denial", () => {
+  const run = (path, method = "GET", live = "true") =>
+    spawnSync(
+      process.execPath,
+      [
+        "--import",
+        "./test/helpers/hosted-runtime-guard.mjs",
+        "--input-type=module",
+        "-e",
+        `try {const req=(await import('node:https')).request({hostname:'127.0.0.1',port:1,path:${JSON.stringify(path)},method:${JSON.stringify(method)},headers:{host:'api.ynab.com'}});req.on('error',()=>{});req.end();}catch{}`,
+      ],
+      {
+        env: {
+          PATH: process.env.PATH,
+          OAUTH_STATE_DIR: "/private/tmp/unused-live-guard",
+          HOSTED_TEST_RUNTIME_DIR: "/private/tmp/unused-live-runtime",
+          HOSTED_TEST_UPSTREAM: "https://127.0.0.1:1",
+          HOSTED_TEST_LIVE: live,
+        },
+        encoding: "utf8",
+        timeout: 5000,
+      },
+    );
+  for (const path of [
+    "/v1/plans",
+    "/v1/plans/11111111-1111-4111-8111-111111111111/accounts",
+  ]) {
+    const result = run(path);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /HOSTED_GUARD.*"denied":0,"network":1/);
+    assert.equal(run(path, "GET", "false").status, 1);
+  }
+  for (const [path, method] of [
+    ["/v1/plans", "POST"],
+    ["/v1/plans?include_accounts=true", "GET"],
+    ["/v1/plans/22222222-2222-4222-8222-222222222222/accounts", "GET"],
+    ["/v1/plans/11111111-1111-4111-8111-111111111111/accounts?x=1", "GET"],
+  ]) {
+    const result = run(path, method);
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /HOSTED_GUARD.*"denied":1/);
+  }
+});

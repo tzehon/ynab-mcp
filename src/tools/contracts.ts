@@ -1,16 +1,17 @@
 import { z } from "zod";
 import {
-  date,
-  integer,
-  uuid,
-  id,
-  name,
   accountType,
   cleared,
+  date,
+  id,
+  integer,
   MAX_RESULT,
+  name,
+  uuid,
 } from "../ynab/contracts.js";
 import { ToolError } from "./errors.js";
-export const planId = z.string().regex(/^fixture-plan-[a-z0-9-]{1,40}$/);
+export const fixturePlanId = z.string().regex(/^fixture-plan-[a-z0-9-]{1,40}$/);
+export const planId = z.union([fixturePlanId, uuid]);
 export const planInput = z.strictObject({ plan_id: planId });
 export const monthInput = z.strictObject({
   plan_id: planId,
@@ -32,8 +33,8 @@ export const transactionsInput = z
     return days >= 1 && days <= 90;
   });
 export const common = {
-  data_mode: z.literal("fixtures"),
-  source: z.literal("mock-ynab"),
+  data_mode: z.enum(["fixtures", "live"]),
+  source: z.enum(["mock-ynab", "ynab"]),
   plan_id: planId,
   currency_code: z.string().regex(/^[A-Z]{3}$/),
   as_of: z.iso.datetime(),

@@ -802,7 +802,7 @@ for (const era of ["legacy", "modern"])
     assert.deepEqual(JSON.parse(r.content[0].text), {
       error: {
         code: "UPSTREAM_FAILURE",
-        message: "Mock upstream request failed.",
+        message: "YNAB upstream request failed.",
       },
     });
     assert.ok(!JSON.stringify(r).includes("SECRET_MARKER"));

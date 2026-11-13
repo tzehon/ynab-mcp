@@ -1,0 +1,22 @@
+src/oauth/browser-request.ts
+  s_eb80e8fdbdac14::t_4e9b788f79f7e9 15
+test/hosted-smoke.test.mjs
+  s_eb80e8fdbdac14::t_b6f981e41c9bcd 2-3,9,173-176,192-197,202-208,212-213,217-227,232-235
+  s_eb80e8fdbdac14::t_5b90f411a57db3 124,130,166-172,177-191,198-201,209-211,214-216,228-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4679a8e276f1cd72476ecc620273b5d8f3b3dfe0",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

@@ -295,9 +295,10 @@ export async function getSpendingReport(
         }
       }
       if (
-        categoryActivity !== before.activity ||
-        add(add(spendingActivity, paymentActivity), incomeActivity) !==
-          before.activity
+        // YNAB includes Ready to Assign income in the category array, but
+        // excludes that income from the month's budget activity total.
+        add(categoryActivity, -incomeActivity) !== before.activity ||
+        add(spendingActivity, paymentActivity) !== before.activity
       )
         fail();
       const totals = empty();

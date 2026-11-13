@@ -496,3 +496,26 @@ test("non-internal records in the internal master group are ambiguous, not ordin
   tx(d, "ambiguous-internal", -500, c.id);
   await assert.rejects(report(d), code("SPENDING_RECONCILIATION_FAILED"));
 });
+
+test("nonzero Ready to Assign income is in source categories but outside raw budget activity", async () => {
+  const d = docs();
+  const income = addCategory(d, 20, "Inflow: Ready to Assign", 750000, {
+    groupName: "Internal Master Category",
+    internal: true,
+    groupInternal: true,
+  });
+  // Provider month activity excludes income even though its category array includes it.
+  d.month.data.month.activity -= income.activity;
+  d.month.data.month.income = income.activity;
+  tx(d, "invented-income", income.activity, income.id);
+  const r = await report(d);
+  assert.equal(r.totals.net_spending_milliunits, 24500);
+  assert.equal(r.reconciliation.income_category_activity_milliunits, 750000);
+  assert.equal(r.reconciliation.budget_activity_milliunits, -24500);
+  assert.equal(
+    r.reconciliation.spending_category_activity_milliunits +
+      r.reconciliation.payment_category_activity_milliunits,
+    r.reconciliation.budget_activity_milliunits,
+  );
+  assert.equal(r.coverage.excluded_income_line_count, 1);
+});

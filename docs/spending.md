@@ -21,8 +21,8 @@ in reconciliation. Recognized internal categories require provider internal flag
 and system-group membership; ordinary categories with similar names stay ordinary.
 
 A report succeeds only when every spending category's transaction sum matches the
-provider month category activity exactly, all category activities match the raw
-month total, and the month snapshot is stable before and after the reads. Duplicate
+provider month category activity exactly, spending-category activity plus card-payment bookkeeping matches raw month
+activity (recognized income in the source category array is excluded), and the month snapshot is stable before and after the reads. Duplicate
 IDs, missing metadata, inconsistent splits, unknown active system categories,
 integer overflow and mismatches fail with a fixed error. There is no adjustment
 bucket or fallback to raw month activity. This is cross-endpoint reconciliation,

@@ -486,3 +486,13 @@ test("four reports occupy four slots; fifth fails before dispatch and cancellati
     true,
   );
 });
+
+test("non-internal records in the internal master group are ambiguous, not ordinary spending", async () => {
+  const d = docs();
+  const c = addCategory(d, 15, "Unknown bookkeeping", -500, {
+    groupName: "Internal Master Category",
+    groupInternal: true,
+  });
+  tx(d, "ambiguous-internal", -500, c.id);
+  await assert.rejects(report(d), code("SPENDING_RECONCILIATION_FAILED"));
+});

@@ -10,7 +10,7 @@ import { mapped, other } from "./helpers/ynab-http.mjs";
 
 for (const live of [false, true])
   for (const profile of ["native", "web", "basic"])
-    test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, five tools and disconnect`, async (t) => {
+    test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, six tools and disconnect`, async (t) => {
       const { h, e, seen, control } = await hostedApp(t, {
         live,
         method:
@@ -281,7 +281,7 @@ for (const live of [false, true])
         params: {},
       });
       assert.equal(r.status, 200, r.text);
-      assert.equal(r.json().result.tools.length, 5);
+      assert.equal(r.json().result.tools.length, 6);
       for (const era of ["legacy", "modern"]) {
         const sdk = new Client(
           { name: "fixture-hosted-smoke", version: "1.0.0" },
@@ -320,7 +320,7 @@ for (const live of [false, true])
         try {
           await sdk.connect(transport);
           assert.equal(sdk.getProtocolEra(), era);
-          assert.equal((await sdk.listTools()).tools.length, 5);
+          assert.equal((await sdk.listTools()).tools.length, 6);
           for (const [name, args] of [
             ["ynab_list_plans", {}],
             [
@@ -339,6 +339,13 @@ for (const live of [false, true])
               },
             ],
             [
+              "ynab_get_spending_report",
+              {
+                plan_id: live ? mapped : "fixture-plan-sgd",
+                month: "2026-11-01",
+              },
+            ],
+            [
               "ynab_list_transactions",
               {
                 plan_id: live ? mapped : "fixture-plan-sgd",
@@ -348,7 +355,7 @@ for (const live of [false, true])
             ],
           ]) {
             const result = await sdk.callTool({ name, arguments: args });
-            assert.notEqual(result.isError, true);
+            assert.notEqual(result.isError, true, JSON.stringify(result));
             assert.equal(
               result.structuredContent.data_mode,
               live ? "live" : "fixtures",
@@ -367,7 +374,7 @@ for (const live of [false, true])
         assert.equal(
           seen.filter((u) => u.startsWith("https://api.ynab.com/v1/plans"))
             .length,
-          11,
+          21, // Two report calls add five fixed GETs each.
         );
       assert.deepEqual(
         [

@@ -9,6 +9,7 @@ import {
   categoriesOutput,
   transactionsOutput,
 } from "../dist/tools/contracts.js";
+import { outputSchema as spendingOutput } from "../dist/tools/get-spending-report.js";
 import { outputSchema } from "../dist/tools/list-plans.js";
 
 export function parseTarget(value) {
@@ -20,7 +21,13 @@ export function parseTarget(value) {
   return new URL(value);
 }
 export async function runSmoke(value, report = () => {}, token) {
-  if (typeof token !== "string" || !token || Buffer.byteLength(token) > 8192 || /\s/.test(token)) throw new Error("INVALID_SMOKE_TOKEN");
+  if (
+    typeof token !== "string" ||
+    !token ||
+    Buffer.byteLength(token) > 8192 ||
+    /\s/.test(token)
+  )
+    throw new Error("INVALID_SMOKE_TOKEN");
   const url = parseTarget(value);
   const whole = AbortSignal.timeout(20000);
   const requestOptions = {
@@ -64,7 +71,7 @@ export async function runSmoke(value, report = () => {}, token) {
         throw new Error("WRONG_PROTOCOL_ERA");
       const { tools } = await client.listTools(undefined, requestOptions);
       if (
-        tools.length !== 5 ||
+        tools.length !== 6 ||
         tools[0].name !== "ynab_list_plans" ||
         tools[0].annotations?.readOnlyHint !== true ||
         !tools[0].outputSchema
@@ -93,6 +100,7 @@ export async function runSmoke(value, report = () => {}, token) {
       for (const [name, schema, extra] of [
         ["ynab_list_accounts", accountsOutput, {}],
         ["ynab_get_month", monthOutput, { month: "2026-11-01" }],
+        ["ynab_get_spending_report", spendingOutput, { month: "2026-11-01" }],
         ["ynab_list_categories", categoriesOutput, {}],
         [
           "ynab_list_transactions",
@@ -133,10 +141,15 @@ if (
     let input = "";
     for await (const chunk of process.stdin) {
       input += chunk.toString();
-      if (Buffer.byteLength(input) > 8193) throw new Error("INVALID_SMOKE_TOKEN");
+      if (Buffer.byteLength(input) > 8193)
+        throw new Error("INVALID_SMOKE_TOKEN");
     }
     const token = input.endsWith("\n") ? input.slice(0, -1) : input;
-    await runSmoke(process.argv[3], (era) => console.log(`MCP_SMOKE_PASS ${era}`), token);
+    await runSmoke(
+      process.argv[3],
+      (era) => console.log(`MCP_SMOKE_PASS ${era}`),
+      token,
+    );
   } catch {
     console.error("MCP_SMOKE_FAILED");
     process.exitCode = 1;

@@ -156,50 +156,153 @@ export class MockYnabClient {
     signal?: AbortSignal,
   ): Promise<R> {
     this.context(args.plan_id);
+    return this.limits.run(signal, (abort, check) =>
+      this.read(operation, args, schema, project, abort, check),
+    );
+  }
+  private async read<S extends z.ZodType, R>(
+    operation: Operation,
+    args: {
+      plan_id: string;
+      month?: string;
+      since_date?: string;
+      until_date?: string;
+    },
+    schema: S,
+    project: (data: z.infer<S>) => R,
+    abort: AbortSignal,
+    check: () => void,
+  ): Promise<R> {
+    check();
+    this.context(args.plan_id);
     const entry =
       this.live?.lookup(args.plan_id) ?? this.config.fixtureMap[args.plan_id];
     if (!entry) throw new ToolError("PLAN_NOT_ALLOWED");
-    return this.limits.run(signal, async (abort, check) => {
-      let receiving = true;
-      try {
-        const response = await this.transport(
-          descriptor(operation, entry.mapped_id, args),
-          abort,
-        );
-        check();
-        const status = response.status;
-        if (status !== 200) {
-          const code =
-            status === 401
-              ? "UPSTREAM_UNAUTHORIZED"
-              : status === 403
-                ? "UPSTREAM_FORBIDDEN"
-                : status === 404
-                  ? "NOT_FOUND"
-                  : status === 429
-                    ? "UPSTREAM_RATE_LIMITED"
-                    : Number.isInteger(status) && status >= 500 && status <= 599
-                      ? "UPSTREAM_UNAVAILABLE"
-                      : "UPSTREAM_FAILURE";
-          throw new ToolError(code);
-        }
-        const raw = await collect(response.body, abort, check);
-        check();
-        receiving = false;
-        rawCaps(raw);
-        const parsed = schema.safeParse(raw);
-        if (!parsed.success) throw new ToolError("UPSTREAM_INVALID_RESPONSE");
-        check();
-        this.live?.check();
-        const result = project(parsed.data);
-        this.live?.check();
-        check();
-        return result;
-      } catch (error) {
-        check();
-        if (error instanceof ToolError) throw error;
-        throw new ToolError(receiving ? "UPSTREAM_FAILURE" : "INTERNAL_ERROR");
+    let receiving = true;
+    try {
+      const response = await this.transport(
+        descriptor(operation, entry.mapped_id, args),
+        abort,
+      );
+      check();
+      const status = response.status;
+      if (status !== 200) {
+        const code =
+          status === 401
+            ? "UPSTREAM_UNAUTHORIZED"
+            : status === 403
+              ? "UPSTREAM_FORBIDDEN"
+              : status === 404
+                ? "NOT_FOUND"
+                : status === 429
+                  ? "UPSTREAM_RATE_LIMITED"
+                  : Number.isInteger(status) && status >= 500 && status <= 599
+                    ? "UPSTREAM_UNAVAILABLE"
+                    : "UPSTREAM_FAILURE";
+        throw new ToolError(code);
       }
+      const raw = await collect(response.body, abort, check);
+      check();
+      receiving = false;
+      rawCaps(raw);
+      const parsed = schema.safeParse(raw);
+      if (!parsed.success) throw new ToolError("UPSTREAM_INVALID_RESPONSE");
+      check();
+      this.live?.check();
+      const result = project(parsed.data);
+      this.live?.check();
+      check();
+      return result;
+    } catch (error) {
+      check();
+      if (error instanceof ToolError) throw error;
+      throw new ToolError(receiving ? "UPSTREAM_FAILURE" : "INTERNAL_ERROR");
+    }
+  }
+  spending<R>(
+    value: unknown,
+    signal: AbortSignal | undefined,
+    project: (value: {
+      args: z.infer<typeof monthInput>;
+      before: z.infer<typeof monthResponse>["data"]["month"];
+      after: z.infer<typeof monthResponse>["data"]["month"];
+      accounts: z.infer<typeof accountsResponse>["data"]["accounts"];
+      groups: z.infer<typeof categoriesResponse>["data"]["category_groups"];
+      transactions: z.infer<
+        typeof transactionsResponse
+      >["data"]["transactions"];
+      until: string;
+    }) => R,
+  ) {
+    const args = parseInput(
+      monthInput.safeExtend({ plan_id: this.live ? uuid : fixturePlanId }),
+      value,
+    );
+    this.context(args.plan_id);
+    const until = new Date(
+      Date.UTC(
+        Number(args.month.slice(0, 4)),
+        Number(args.month.slice(5, 7)),
+        0,
+      ),
+    )
+      .toISOString()
+      .slice(0, 10);
+    return this.limits.run(signal, async (abort, check) => {
+      const before = await this.read(
+        "month",
+        args,
+        monthResponse,
+        (d) => d.data.month,
+        abort,
+        check,
+      );
+      const groups = await this.read(
+        "categories",
+        args,
+        categoriesResponse,
+        (d) => d.data.category_groups,
+        abort,
+        check,
+      );
+      const accounts = await this.read(
+        "accounts",
+        args,
+        accountsResponse,
+        (d) => d.data.accounts,
+        abort,
+        check,
+      );
+      const transactions = await this.read(
+        "transactions",
+        { ...args, since_date: args.month, until_date: until },
+        transactionsResponse,
+        (d) => d.data.transactions,
+        abort,
+        check,
+      );
+      const after = await this.read(
+        "month",
+        args,
+        monthResponse,
+        (d) => d.data.month,
+        abort,
+        check,
+      );
+      check();
+      this.context(args.plan_id);
+      const result = project({
+        args,
+        before,
+        after,
+        groups,
+        accounts,
+        transactions,
+        until,
+      });
+      this.context(args.plan_id);
+      check();
+      return result;
     });
   }
   accounts<R>(
@@ -290,6 +393,7 @@ export class MockYnabClient {
     project: (value: {
       args: z.infer<typeof transactionsInput>;
       data: z.infer<typeof transactionsResponse>["data"]["transactions"];
+      sourceVersion: number;
     }) => R,
   ) {
     const args = parseInput(
@@ -315,7 +419,11 @@ export class MockYnabClient {
           )
         )
           throw new ToolError("UPSTREAM_INVALID_RESPONSE");
-        return project({ args, data: data.transactions });
+        return project({
+          args,
+          data: data.transactions,
+          sourceVersion: data.server_knowledge,
+        });
       },
       signal,
     );

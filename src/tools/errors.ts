@@ -1,4 +1,8 @@
 export const messages = Object.freeze({
+  SPENDING_RECONCILIATION_FAILED:
+    "Spending data did not reconcile. No complete spending report is available; do not substitute budget activity or partial transaction totals.",
+  STALE_CURSOR:
+    "Transaction cursor is invalid or stale. Restart the date window; do not combine pages from different versions.",
   INVALID_ARGUMENTS: "Invalid tool arguments.",
   PLAN_NOT_ALLOWED: "Plan is not allowed.",
   NOT_FOUND: "Requested data was not found.",

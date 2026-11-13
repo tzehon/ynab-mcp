@@ -23,6 +23,7 @@ export const transactionsInput = z
     since_date: date,
     until_date: date,
     limit: z.number().int().min(1).max(100).default(50),
+    cursor: z.string().min(1).max(1024).optional(),
   })
   .refine((v) => {
     const days =
@@ -64,6 +65,19 @@ export const monthOutput = z.strictObject({
     assigned_milliunits: integer,
     activity_milliunits: integer,
     ready_to_assign_milliunits: integer,
+    activity_is_spending: z.literal(false),
+    category_activity: z
+      .array(
+        z.strictObject({
+          id: uuid,
+          category_group_id: uuid,
+          name,
+          hidden: z.boolean(),
+          internal: z.boolean(),
+          activity_milliunits: integer,
+        }),
+      )
+      .max(1000),
   }),
 });
 const cat = { id: uuid, name, hidden: z.boolean(), internal: z.boolean() };
@@ -108,6 +122,8 @@ export const transactionsOutput = z.strictObject({
   returned_count: z.number().int().min(0).max(100),
   available_count: z.number().int().min(0).max(1000),
   pending_excluded: z.literal(true),
+  next_cursor: z.string().max(1024).nullable(),
+  source_version: integer.nonnegative(),
   transactions: z.array(transactionOutput).max(100),
 });
 export function parseInput<T extends z.ZodType>(

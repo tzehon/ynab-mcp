@@ -51,7 +51,7 @@ test("every new tool rejects malformed arguments and all override classes before
         "method",
         "credential",
         "path",
-        "cursor",
+        ...(tool === listTransactions ? [] : ["cursor"]),
         "limit_override",
       ].map((k) => ({ ...valid, [k]: "SECRET_MARKER" })),
       ...["default", "last-used", "11111111-1111-4111-8111-111111111111"].map(
@@ -126,6 +126,8 @@ test("transaction boundary counts, deletion nesting, date sort and child transfe
         "returned_count",
         "available_count",
         "pending_excluded",
+        "next_cursor",
+        "source_version",
         "transactions",
       ].sort(),
     );

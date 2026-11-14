@@ -49,17 +49,25 @@ across the collected months is rejected rather than guessed.
 
 1. Call analysis for spending totals, category breakdowns and charts. Use raw month
    activity only for an explicit accounting question, never as a spending substitute.
-2. On success, use the returned canonical answer/facts and generated SVGs. Preserve
-   the exact date/currency/gross-credit-net/provisional labels. Do not independently
-   reconstruct amounts, infer a spike from the prompt, or clip negative categories.
+2. On success, use the returned canonical answer and exact facts. Prefer the
+   client's native visualization or artifact capability when available: for example
+   Codex Visualize or Claude artifacts. Bind monthly rows to `months`, category rows
+   to `categories` and comparison rows to `comparison.category_changes`; use the
+   returned totals, direction and percentage rather than recomputing them. Layout,
+   sorting and unit formatting are presentation, not permission to change facts.
+   Preserve integer milliunits before formatting, every requested row, full labels,
+   date/currency/gross-credit-net/provisional notices, `as_of` and `evidence_digest`.
+   Do not infer a spike from the prompt or clip negative categories. The generated
+   SVGs and authenticated MCP App remain supported fallbacks.
 3. Explain observed changes with `comparison.category_changes`. A claimed spike
    must be corrected when `direction` is decrease or unchanged. Transaction cursor
    pages support further investigation; distinguish observed amounts from inferred
    causes and require actual evidence for any transaction-purpose explanation.
 4. On error, say the analysis is unavailable and identify the error. Do not fall
-   back to raw activity, partial pages, invented charts or zeros. If the client
-   cannot display SVGs, provide the canonical answer and explain that display
-   limitation. Refresh discovery/start a fresh chat if the seventh tool is absent.
+   back to raw activity, partial pages, invented charts or zeros. If neither native
+   visualization nor the supplied view/SVG is supported, provide the canonical
+   answer and explain that display limitation. Refresh discovery/start a fresh chat
+   after guidance updates or if the seventh tool is absent.
 
 MCP instructions guide a general-purpose assistant; they cannot force every
 external client's prose to comply. The deterministic tool outputs are enforced.

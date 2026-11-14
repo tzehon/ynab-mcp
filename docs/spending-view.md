@@ -25,6 +25,27 @@ formatted existing facts, not recalculated totals. Labels and values are not shr
 retrieval time remain visible below. If validation fails, there is no financial
 chart; request a fresh analysis rather than reconstructing values.
 
+## Native client presentation
+
+Prefer the client's native visualization/artifact capability when available.
+The server is the source of financial facts; the client controls presentation.
+Native views may use their own layout, theme and interaction, binding directly to
+`months`, `categories` and `comparison.category_changes` from one successful,
+complete `ynab_get_spending_analysis` result. Never recompute spending, deltas or
+percentages from raw data. Preserve signed integer milliunits before formatting,
+full labels, all requested rows, currency, dates, credits and provisional notices.
+Retain `as_of` and `evidence_digest` for correspondence. Do not mix captures or
+silently invent an Other bucket. A digest is not proof that a model copied facts
+correctly: actual native views still require figure and readability checks.
+
+For Codex use its native visualization capability; for Claude web/Desktop use
+private artifacts when supported. Do not publish financial artifacts or add
+external uploads. Claude Code terminal capability is separate: a browser preview
+is a fallback and is not an inline terminal chart. If no supported native view is
+available, use the authenticated MCP view/original SVG/private exporter below or
+state the limitation with the canonical answer. Failed or partial analysis never
+qualifies for a financial chart, regardless of renderer.
+
 ## Client setup and acceptance
 
 Refresh the existing shared OpenAI plugin's tool metadata after deployment and

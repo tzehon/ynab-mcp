@@ -21,7 +21,8 @@
     "smoke:auth-fixtures": "node scripts/auth-fixture-smoke.mjs",
     "smoke:auth-integrated": "node scripts/integrated-auth-smoke.mjs",
     "check:container": "node scripts/check-container.mjs",
-    "smoke:auth-hosted": "npm run build && node --test test/hosted-smoke.test.mjs"
+    "smoke:auth-hosted": "npm run build && node --test test/hosted-smoke.test.mjs",
+    "preview:spending": "node scripts/export-spending-preview.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",

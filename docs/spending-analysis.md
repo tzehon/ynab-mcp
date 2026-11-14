@@ -81,3 +81,8 @@ labels, bounds, cancellation, admission, revocation and complete orchestration.
 Both SDK eras exercise the tool. Synthetic tests contain no owner data. Actual
 client prompts and private comparisons against current YNAB reports/transactions
 are separate release acceptance; publish only generic outcomes in Git/Jira.
+
+## Chart presentation
+
+See [the reconciled spending view](spending-view.md) for the standard MCP App,
+private Claude Code capture preview, validation boundaries and client acceptance.

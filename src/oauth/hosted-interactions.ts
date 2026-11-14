@@ -162,7 +162,7 @@ export class HostedInteractions {
         this.setCookie(res, browser);
         html(
           res,
-          `<p>Allow ${escapeHtml(flow.client)} to access ${escapeHtml(this.config.origin)}/mcp with ${this.live ? "read-only access to your selected YNAB plans" : "fixture-only read permission"}? ${String(detail.params.scope).split(" ").includes("offline_access") ? "This includes continued access without this browser session." : "You will reconnect after the access token expires."} You can disconnect both clients from the connection page.</p><form method="post"><input type="hidden" name="csrf" value="${flow.csrf}"><button name="decision" value="continue">Continue with YNAB</button><button name="decision" value="deny">Deny</button></form>`,
+          `<p>Allow ${escapeHtml(flow.client)} to access ${escapeHtml(this.config.origin)}/mcp with ${this.live ? "read-only access to your selected YNAB plans" : "fixture-only read permission"}? ${String(detail.params.scope).split(" ").includes("offline_access") ? "This includes continued access without this browser session." : "You will reconnect after the access token expires."} You can disconnect all connected clients from the connection page.</p><form method="post"><input type="hidden" name="csrf" value="${flow.csrf}"><button name="decision" value="continue">Continue with YNAB</button><button name="decision" value="deny">Deny</button></form>`,
           [
             "https://app.ynab.com",
             // The engine has validated this callback. Native clients may use

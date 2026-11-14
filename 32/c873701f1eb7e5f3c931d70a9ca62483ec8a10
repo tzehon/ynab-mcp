@@ -1,0 +1,18 @@
+docs/spending-analysis.md
+  h_60534644ebf874 52-61,67-70
+docs/spending-view.md
+  h_60534644ebf874 28-48
+src/mcp.ts
+  h_60534644ebf874 60,107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "32c873701f1eb7e5f3c931d70a9ca62483ec8a10",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

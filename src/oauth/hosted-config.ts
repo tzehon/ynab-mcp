@@ -14,6 +14,7 @@ export type HostedConfig = Readonly<{
   webCallback: string;
   webMethod: "client_secret_post" | "client_secret_basic";
   webSecret: string;
+  claude?: Readonly<{ id: string; secret: string }>;
   ynabId: string;
   ynabSecret: string;
   enrollment:
@@ -132,6 +133,20 @@ export function hostedConfig(
   const nativeId = id("OAUTH_NATIVE_CLIENT_ID"),
     webId = id("OAUTH_WEB_CLIENT_ID");
   if (nativeId === webId) throw new ConfigError("OAUTH_WEB_CLIENT_ID");
+  const webSecret = secret("OAUTH_WEB_SECRET");
+  let claude: HostedConfig["claude"];
+  if (
+    env.OAUTH_CLAUDE_CLIENT_ID !== undefined ||
+    env.OAUTH_CLAUDE_SECRET !== undefined
+  ) {
+    const claudeId = id("OAUTH_CLAUDE_CLIENT_ID"),
+      claudeSecret = secret("OAUTH_CLAUDE_SECRET");
+    if ([nativeId, webId].includes(claudeId))
+      throw new ConfigError("OAUTH_CLAUDE_CLIENT_ID");
+    if (claudeSecret === webSecret)
+      throw new ConfigError("OAUTH_CLAUDE_SECRET");
+    claude = Object.freeze({ id: claudeId, secret: claudeSecret });
+  }
   let enrollment: HostedConfig["enrollment"];
   if (env.AUTH_ALLOWED_SUBJECT) {
     const owner = get("AUTH_ALLOWED_SUBJECT");
@@ -179,7 +194,8 @@ export function hostedConfig(
     nativeCallback: callback("OAUTH_NATIVE_CALLBACK", true),
     webCallback: callback("OAUTH_WEB_CALLBACK", false),
     webMethod,
-    webSecret: secret("OAUTH_WEB_SECRET"),
+    webSecret,
+    ...(claude ? { claude } : {}),
     ynabId: id("YNAB_CLIENT_ID"),
     ynabSecret: secret("YNAB_CLIENT_SECRET"),
     enrollment,

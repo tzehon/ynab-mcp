@@ -189,3 +189,32 @@ test("live mode requires all explicit switches and enrolled owner, excludes fixt
   ])
     assert.throws(() => hostedConfig({ ...live, ...change }));
 });
+
+test("Claude static profile is optional, atomic and independent of existing credentials", () => {
+  const base = env();
+  assert.equal(hostedConfig(base).claude, undefined);
+  const enabled = {
+    ...base,
+    OAUTH_CLAUDE_CLIENT_ID: "fixture-claude",
+    OAUTH_CLAUDE_SECRET: hex(),
+  };
+  assert.deepEqual(hostedConfig(enabled).claude, {
+    id: enabled.OAUTH_CLAUDE_CLIENT_ID,
+    secret: enabled.OAUTH_CLAUDE_SECRET,
+  });
+  for (const override of [
+    { OAUTH_CLAUDE_CLIENT_ID: undefined },
+    { OAUTH_CLAUDE_SECRET: undefined },
+    { OAUTH_CLAUDE_CLIENT_ID: "" },
+    { OAUTH_CLAUDE_SECRET: "" },
+    { OAUTH_CLAUDE_CLIENT_ID: base.OAUTH_NATIVE_CLIENT_ID },
+    { OAUTH_CLAUDE_CLIENT_ID: base.OAUTH_WEB_CLIENT_ID },
+    { OAUTH_CLAUDE_CLIENT_ID: "synthetic-client" },
+    { OAUTH_CLAUDE_CLIENT_ID: "https://identity.example" },
+    { OAUTH_CLAUDE_SECRET: base.OAUTH_WEB_SECRET },
+    { OAUTH_CLAUDE_SECRET: "too-short" },
+    { OAUTH_CLAUDE_SECRET: "synthetic-" + hex() },
+    { OAUTH_CLAUDE_SECRET: "x".repeat(4097) },
+  ])
+    assert.throws(() => hostedConfig({ ...enabled, ...override }));
+});

@@ -3,6 +3,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import Provider, { errors } from "oidc-provider";
 import type { LiveService } from "../ynab/live-service.js";
 import { fail } from "./crypto.js";
+import {
+  approvedTokenMethod,
+  hostedClients,
+  hostedAuthMethods,
+} from "./hosted-clients.js";
 import { hostedAdapter } from "./hosted-adapter.js";
 import type { HostedConfig } from "./hosted-config.js";
 import { HostedInteractions } from "./hosted-interactions.js";
@@ -33,25 +38,8 @@ export function hostedEngine(
   const provider = new Provider(config.origin, {
     ...hostedPolicy(resource),
     adapter: hostedAdapter(store, families, () => lifecycle.check()),
-    clients: [
-      {
-        client_id: config.nativeId,
-        application_type: "native",
-        redirect_uris: [config.nativeCallback],
-        grant_types: ["authorization_code", "refresh_token"],
-        response_types: ["code"],
-        token_endpoint_auth_method: "none",
-      },
-      {
-        client_id: config.webId,
-        client_secret: config.webSecret,
-        application_type: "web",
-        redirect_uris: [config.webCallback],
-        grant_types: ["authorization_code", "refresh_token"],
-        response_types: ["code"],
-        token_endpoint_auth_method: config.webMethod,
-      },
-    ],
+    clients: hostedClients(config),
+    clientAuthMethods: hostedAuthMethods(config),
     // The engine accepts private signing keys only. Retirement is verification-
     // only and is published/enforced by hostedService's bounded public keyset.
     jwks: { keys: keys.signing.slice(0, 1) },
@@ -132,14 +120,8 @@ export function hostedEngine(
             (body.has("resource") && body.get("resource") !== resource)
           )
             throw new errors.InvalidTarget();
-          // Engine accepts Basic/Post interchangeably; enforce the approved exact
-          // static profile before letting the engine authenticate credentials.
-          if (
-            (config.webMethod === "client_secret_post" &&
-              ctx.headers.authorization !== undefined) ||
-            (config.webMethod === "client_secret_basic" &&
-              body.has("client_secret"))
-          )
+          // Enforce each static profile before provider credential verification.
+          if (!approvedTokenMethod(config, body, ctx.headers.authorization))
             throw new errors.InvalidClientAuth();
           (ctx.request as typeof ctx.request & { body: unknown }).body =
             Object.fromEntries(body);

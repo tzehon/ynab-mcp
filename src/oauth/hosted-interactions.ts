@@ -5,6 +5,7 @@ import { hostedPage } from "../http/hosted-pages.js";
 import type { LiveService } from "../ynab/live-service.js";
 import { sameOriginForm } from "./browser-request.js";
 import { fail } from "./crypto.js";
+import { hostedClients } from "./hosted-clients.js";
 import type { HostedConfig } from "./hosted-config.js";
 import type { HostedLifecycle } from "./hosted-lifecycle.js";
 import type { HostedUpstream } from "./hosted-upstream.js";
@@ -137,7 +138,7 @@ export class HostedInteractions {
           return true;
         }
         const client = detail.params.client_id;
-        if (![this.config.nativeId, this.config.webId].includes(String(client)))
+        if (!hostedClients(this.config).some((c) => c.client_id === client))
           fail();
         const candidate = this.cookie(req),
           browser =

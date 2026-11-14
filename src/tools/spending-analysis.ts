@@ -183,6 +183,7 @@ export function chartSvg(
   rows: Row[],
   digest: string,
   caption = "",
+  emptyMessage = "No category activity; reconciled zero.",
 ) {
   if (rows.length > 100) throw new ToolError("RESULT_TOO_LARGE");
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.value)));
@@ -216,7 +217,7 @@ export function chartSvg(
     })
     .join("");
   if (rows.length === 0) y += 30;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 ${y + 28}" role="img" aria-label="${xml(title)}" data-evidence-digest="${digest}"><rect width="768" height="${y + 28}" fill="#fff"/><g fill="#17212b" font-family="sans-serif" font-size="16"><text x="24" y="28" font-size="20">${xml(title)}</text><text x="24" y="50">${xml(currency)} · net of category credits · zero at centre</text>${captionText}${body}${rows.length ? "" : `<text x="24" y="${y}">No category activity; reconciled zero.</text>`}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 ${y + 28}" role="img" aria-label="${xml(title)}" data-evidence-digest="${digest}"><rect width="768" height="${y + 28}" fill="#fff"/><g fill="#17212b" font-family="sans-serif" font-size="16"><text x="24" y="28" font-size="20">${xml(title)}</text><text x="24" y="50">${xml(currency)} · net of category credits · zero at centre</text>${captionText}${body}${rows.length ? "" : `<text x="24" y="${y}">${xml(emptyMessage)}</text>`}</g></svg>`;
   if (Buffer.byteLength(svg) > 65536) throw new ToolError("RESULT_TOO_LARGE");
   return svg;
 }
@@ -434,6 +435,7 @@ export function compileAnalysis(input: unknown, values: unknown[]) {
         })),
         digest,
         caption,
+        "No category changes; spending is unchanged.",
       ),
     });
   return outputSchema.parse({

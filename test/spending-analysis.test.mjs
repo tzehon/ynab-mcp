@@ -543,3 +543,15 @@ test("whole-result byte bound refuses oversized generated presentation", () => {
     code("RESULT_TOO_LARGE"),
   );
 });
+
+
+test("unchanged nonzero spending has a no-changes comparison caption, not a zero-spending claim", () => {
+  const a = compileAnalysis(input, [report("2026-08-01", 100000), report("2026-09-01", 100000)]);
+  assert.equal(a.totals.net_spending_milliunits, 200000);
+  assert.equal(a.comparison.direction, "unchanged");
+  assert.deepEqual(a.comparison.category_changes, []);
+  const svg = a.charts.find(c => c.kind === "comparison").svg;
+  assert.match(svg, /No category changes; spending is unchanged/);
+  assert.doesNotMatch(svg, /No category activity|reconciled zero/);
+  assert.match(a.charts.find(c => c.kind === "category").svg, /SGD 200\.00/);
+});

@@ -108,6 +108,7 @@ for (const method of ["client_secret_post", "client_secret_basic"])
       new Set(["none", method, "client_secret_post"]),
     );
     assert.equal(metadata.registration_endpoint, undefined);
+    assert.deepEqual(metadata.scopes_supported, ["ynab:read", "offline_access"]);
     const badAuth = await b.fetch(
       `/auth?${new URLSearchParams({ client_id: e.OAUTH_CLAUDE_CLIENT_ID, redirect_uri: "https://attacker.example/callback", response_type: "code", scope: "ynab:read", resource: `${h.origin}/mcp`, code_challenge_method: "S256", code_challenge: "a".repeat(43) })}`,
     );

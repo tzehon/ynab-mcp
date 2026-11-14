@@ -122,8 +122,9 @@ export async function hostedService(
         try {
           securityHeaders(res);
           const path = new URL(req.url ?? "", config.origin).pathname;
+          // Publish only the scopes/profile actually accepted by this resource,
+          // in both enrollment and owner mode (provider defaults include OpenID).
           if (
-            !engine &&
             [
               "/.well-known/oauth-authorization-server",
               "/.well-known/openid-configuration",

@@ -147,6 +147,12 @@ export function validationRuntime(
       (!r.all_periods_closed && args.include_open_month !== true)
     )
       fail();
+    if (
+      args.comparison_month &&
+      (month(args.comparison_month) <= first ||
+        month(args.comparison_month) > last)
+    )
+      fail();
     const comparisonMonth =
       last > first ? (args.comparison_month ?? args.last_month) : undefined;
     if (!!r.comparison !== !!comparisonMonth) fail();

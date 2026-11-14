@@ -60,3 +60,13 @@ test('shell metacharacters stay ordinary metadata', () => {
   const v = valid(); v.title = 'YNAB-1: $(touch sentinel) `echo hi` ; echo x';
   assert.equal(validateMetadata(v).ok, true);
 });
+
+test('YNAB-12 requires all nine chart-delivery acceptance entries', () => {
+  const m = metadata();
+  m.issueUrl = `${origin}/browse/YNAB-12`;
+  for (const approval of Object.values(m.approvals)) approval.decisionUrl = `${origin}/browse/YNAB-12?focusedCommentId=456`;
+  m.acceptanceCriteria.push({ ...m.acceptanceCriteria[0], id:'AC-9' });
+  const v={title:'YNAB-12: Display reconciled charts',body:body(m),jiraBaseUrl:origin,commits:[{sha:'d'.repeat(40),message:'YNAB-12: Add spending view'}]};
+  assert.equal(validateMetadata(v).ok,true);
+  m.acceptanceCriteria.pop(); rejects({...v,body:body(m)},'AC');
+});

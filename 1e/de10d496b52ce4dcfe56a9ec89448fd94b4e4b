@@ -1,0 +1,20 @@
+AGENTS.md
+  s_eb80e8fdbdac14::t_380c05b4a73538 3-139
+  s_eb80e8fdbdac14::t_9f6e27dfb4ecda 140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ede10d496b52ce4dcfe56a9ec89448fd94b4e4b",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

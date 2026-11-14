@@ -1,0 +1,27 @@
+docs/hosting.md
+  s_eb80e8fdbdac14::t_a4d43aa6b1fa68 69,179-185
+docs/claude-clients.md
+  s_eb80e8fdbdac14::t_a4d43aa6b1fa68 1-61
+scripts/lib/pr-metadata.mjs
+  s_eb80e8fdbdac14::t_a14d03a230f6eb 25
+test/ynab-metadata.test.mjs
+  s_eb80e8fdbdac14::t_a14d03a230f6eb 6,24
+README.md
+  s_eb80e8fdbdac14::t_a4d43aa6b1fa68 3-15,64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "006f738e47fa422d00a1af41ce6c474aa3ed7647",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

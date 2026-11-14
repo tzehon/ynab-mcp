@@ -1,0 +1,29 @@
+src/oauth/hosted-service.ts
+  s_eb80e8fdbdac14::t_b5e8be00a7f559 125-126
+test/hosted-claude.test.mjs
+  s_1d643f41a6b8a6::t_1a10261fb97f65 111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2de53ab0f4f47715a400008c822f4f2a4a8cbb86",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    },
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

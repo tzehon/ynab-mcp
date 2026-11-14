@@ -1,0 +1,41 @@
+src/oauth/hosted-interactions.ts
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 8,141
+test/hosted-smoke.test.mjs
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 12-18,22-25,35-39,43-45,110-114
+test/helpers/hosted-app.mjs
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 18-23,87-91
+src/oauth/hosted-clients.ts
+  s_eb80e8fdbdac14::t_2847d901ff7b0d 1,85-88,90
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 2-6,9-11,13-84,91
+  s_eb80e8fdbdac14::t_201e9c56f56807 7-8,12,89
+test/hosted-claude.test.mjs
+  s_eb80e8fdbdac14::t_a4d43aa6b1fa68 133-134
+  s_eb80e8fdbdac14::t_2847d901ff7b0d 1-117,119-132,135-198
+  s_eb80e8fdbdac14::t_2ea27e0d064ca8 118
+src/oauth/hosted-service.ts
+  s_eb80e8fdbdac14::t_2847d901ff7b0d 9,150-151
+src/oauth/hosted-engine.ts
+  s_eb80e8fdbdac14::t_2847d901ff7b0d 6-10,42
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 41,123-124
+test/hosted-config.test.mjs
+  s_eb80e8fdbdac14::t_2847d901ff7b0d 196-219
+  s_eb80e8fdbdac14::t_a0f3f5155c166e 192-195,220
+src/oauth/hosted-config.ts
+  s_eb80e8fdbdac14::t_bb63e2ff3a7ca7 17,136-149,197-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bca829f26659a2d13690d35507b4cdd4a235fe17",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

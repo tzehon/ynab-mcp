@@ -66,6 +66,7 @@ from incoming headers. Update every issuer/resource/callback consistently.
 | `OAUTH_NATIVE_CLIENT_ID` / `OAUTH_NATIVE_CALLBACK` | Static Codex client ID and observed literal-loopback callback |
 | `OAUTH_WEB_CLIENT_ID` / `OAUTH_WEB_CALLBACK` | Static ChatGPT client ID and exact callback displayed by its setup UI |
 | `OAUTH_WEB_AUTH_METHOD` / `OAUTH_WEB_SECRET` | Observed `client_secret_post` or `client_secret_basic`, and private client secret |
+| `OAUTH_CLAUDE_CLIENT_ID` / `OAUTH_CLAUDE_SECRET` | Optional pair: distinct static Claude client and independent secret; fixed `https://claude.ai/api/mcp/auth_callback`, `client_secret_post`. Omit both to disable; partial/invalid/reused credentials fail startup |
 | `FIXTURE_ALLOWED_PLAN_IDS` | Fixture mode only: explicit built-in IDs. Must be absent in live mode; encrypted owner selection controls real plans |
 | `AUTH_ALLOWED_SUBJECT` | Verified YNAB UUID after enrollment; never infer from email |
 
@@ -175,3 +176,10 @@ See [recovery](recovery.md) before release.
 ## Owner-selected live tools
 
 After enrollment, follow [live setup](live-tools.md) to enable the explicit live mode and choose plans. Keep enrollment closed until reviewed code, public policy links, provider logging and private storage checks pass. Retain the existing cost-stop controls and recovery procedure.
+
+## Claude connector
+
+See [Claude setup and qualification](claude-clients.md). The optional client adds
+no provider scope, dynamic registration or anonymous access. It shares the existing
+owner and explicitly selected plans, while codes/refresh families remain bound to
+their individual OAuth clients. Existing OpenAI credentials are not reused.

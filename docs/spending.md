@@ -1,5 +1,9 @@
 # Spending reports and evidence
 
+For spending answers, period comparisons and charts, use the
+[validated analysis path](spending-analysis.md). The monthly report below is its
+source primitive and remains available for explicit reconciliation inspection.
+
 Call `ynab_get_spending_report` with an allowed `plan_id` and month start such as
 `2026-11-01`. For six months, make six calls. A successful report provides exact
 integer milliunits, currency, retrieval time, period boundaries and coverage.

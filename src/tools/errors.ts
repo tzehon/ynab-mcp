@@ -1,4 +1,6 @@
 export const messages = Object.freeze({
+  SPENDING_ANALYSIS_INVALID:
+    "Requested spending evidence is incomplete or inconsistent. No complete analysis or chart is available; do not substitute raw activity, partial totals or zero.",
   SPENDING_RECONCILIATION_FAILED:
     "Spending data did not reconcile. No complete spending report is available; do not substitute budget activity or partial transaction totals.",
   STALE_CURSOR:

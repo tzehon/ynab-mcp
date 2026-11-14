@@ -31,6 +31,15 @@ are both required. Keep financial contents out of Git/Jira/logs. See
 [docs/spending.md](docs/spending.md). This scoped exception supersedes historical
 five-tool/no-aggregate limitations without relaxing old fixture I/O guards.
 
+YNAB-10 adds `ynab_get_spending_analysis`: one through six explicit months,
+retrieved sequentially through the existing reconciled report. Each month keeps
+its admission/three-second/raw limits; orchestration has an absolute nine-second
+deadline. No partial analysis, caller-supplied financial facts or financial cache.
+Canonical answers and inert SVG charts derive from the same checked integer facts.
+Use this path for spending answers/visuals and keep raw tools for explicit source
+inspection or drill-down. External client prose cannot be universally enforced;
+actual client use and values must be inspected separately from synthetic tests.
+
 ## Existing workflow and technical constraints
 
 Jira is authoritative for current intent, Spec, Plan, Acceptance criteria and

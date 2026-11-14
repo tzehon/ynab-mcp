@@ -25,7 +25,7 @@ for (const era of ["legacy", "modern"])
       assert.ok(wire.some((m) => m.method === "notifications/initialized"));
     } else assert.ok(wire.some((m) => m.method === "server/discover"));
     const { tools } = await c.listTools();
-    assert.equal(tools.length, 6);
+    assert.equal(tools.length, 7);
     assert.equal(tools[0].name, "ynab_list_plans");
     assert.equal(tools[0].inputSchema.additionalProperties, false);
     assert.ok(tools[0].outputSchema);
@@ -45,6 +45,14 @@ for (const era of ["legacy", "modern"])
       ["ynab_list_accounts", {}],
       ["ynab_get_month", { month: "2026-11-01" }],
       ["ynab_get_spending_report", { month: "2026-11-01" }],
+      [
+        "ynab_get_spending_analysis",
+        {
+          first_month: "2026-11-01",
+          last_month: "2026-11-01",
+          include_open_month: true,
+        },
+      ],
       ["ynab_list_categories", {}],
       [
         "ynab_list_transactions",

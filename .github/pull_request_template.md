@@ -6,11 +6,12 @@ Describe the concrete problem and resulting behavior. Link the primary Jira issu
 
 List actual commands/results and reviewed/tested SHAs. Distinguish manual checks
 from automated syntax checks. Report pending post-merge verification explicitly.
-The owner must recheck live Jira fields/approvals and decide whether to merge.
+Recheck live Jira fields/approvals and record the concrete merge decision under
+the authority in AGENTS.md. Identify delegated decisions truthfully.
 
 # Jira revisions and AC evidence
 
-Replace all placeholders below. See README for the schema and check commands.
+Replace all placeholders below. See [contributing](../docs/contributing.md) for the schema and check commands.
 
 ```ynab-metadata
 {

@@ -1,18 +1,18 @@
 # ynab-mcp
 
-The [injected read-only HTTP transport](docs/ynab-http-transport.md) provides a
-bounded adapter tested against local mock servers. It is not wired into runtime
-modes; all current tools still serve fixtures.
+An owner-bound, read-only YNAB MCP service with integrated YNAB OAuth and
+explicitly selected plans. Hosted live mode exposes seven tools, including
+[reconciled spending reports](docs/spending.md) and
+[validated answers and charts](docs/spending-analysis.md). The shared MCP Tools
+for YNAB plugin is the preferred Codex/ChatGPT connection. Optional
+[Claude connector support](docs/claude-clients.md) requires separate configuration
+and actual acceptance for web, Desktop and Code.
 
-Hosted integrated authorization is under development in YNAB-6. See
-[hosting](docs/hosting.md) and [recovery](docs/recovery.md) for the explicit mode,
-private enrollment and release gates. All tools still use synthetic fixtures.
-Local modes retain the restrictions below. No live deployment is implied.
-
-A local, fixture-only MCP server and delivery checks for a future personal,
-read-only YNAB service. Five tools expose invented plans, accounts, month values,
-category metadata and transactions through an in-memory mock adapter. It is not connected to YNAB, Codex or ChatGPT, and is not hosted.
-Authenticated Railway deployment and real client connections are later work.
+See [hosting](docs/hosting.md), [live tools](docs/live-tools.md) and
+[recovery](docs/recovery.md) for deployment boundaries. Local fixture-token and
+integrated-mock modes remain synthetic and must never be exposed publicly.
+Jira and private release evidence establish the tested deployment/client state;
+cloning this repository does not establish a live connection.
 
 ## Set up or resume on another machine
 
@@ -61,7 +61,7 @@ npm run smoke:auth-fixtures -- --mode dev
 ```
 
 Each run generates disposable RSA keys in memory, writes only a public fixture
-bundle to temporary scratch, starts the protected service, exercises all six
+bundle to temporary scratch, starts the protected service, exercises all seven
 tools in both protocol eras and missing/expired/wrong-owner rejection, then shuts
 down and cleans up. It prints only fixed success/failure labels. This is a local
 mock test, not Auth0 login or actual Codex/ChatGPT acceptance.

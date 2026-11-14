@@ -77,6 +77,12 @@ test("exact original charts and answer validate, including default comparison, n
     assert.equal(await spendingValidator.validate(a, input), a);
   }
   const single = { ...input, last_month: input.first_month };
+  await assert.rejects(
+    spendingValidator.validate(compileAnalysis(single, [fixture()[0]]), {
+      ...single,
+      comparison_month: single.first_month,
+    }),
+  );
   await spendingValidator.validate(
     compileAnalysis(single, [fixture()[0]]),
     single,

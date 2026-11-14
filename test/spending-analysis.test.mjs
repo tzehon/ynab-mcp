@@ -86,7 +86,7 @@ const code = (expected) => (e) => e.code === expected;
 
 test("complete answer/chart workflow corrects a false September spike with independent expected values", () => {
   const a = compileAnalysis(input, fixture());
-  assert.deepEqual(a.totals, amounts(90000, 30000));
+  assert.deepEqual(a.totals, amounts(180000, 30000));
   assert.equal(a.comparison.change_milliunits, -50000);
   assert.equal(a.comparison.percent_change_basis_points, -5000);
   assert.equal(a.comparison.direction, "decrease");

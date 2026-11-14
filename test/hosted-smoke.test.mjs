@@ -10,7 +10,7 @@ import { mapped, other } from "./helpers/ynab-http.mjs";
 
 for (const live of [false, true])
   for (const profile of ["native", "web", "basic"])
-    test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, six tools and disconnect`, async (t) => {
+    test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, seven tools and disconnect`, async (t) => {
       const { h, e, seen, control } = await hostedApp(t, {
         live,
         method:
@@ -281,7 +281,7 @@ for (const live of [false, true])
         params: {},
       });
       assert.equal(r.status, 200, r.text);
-      assert.equal(r.json().result.tools.length, 6);
+      assert.equal(r.json().result.tools.length, 7);
       for (const era of ["legacy", "modern"]) {
         const sdk = new Client(
           { name: "fixture-hosted-smoke", version: "1.0.0" },
@@ -320,7 +320,7 @@ for (const live of [false, true])
         try {
           await sdk.connect(transport);
           assert.equal(sdk.getProtocolEra(), era);
-          assert.equal((await sdk.listTools()).tools.length, 6);
+          assert.equal((await sdk.listTools()).tools.length, 7);
           for (const [name, args] of [
             ["ynab_list_plans", {}],
             [
@@ -343,6 +343,15 @@ for (const live of [false, true])
               {
                 plan_id: live ? mapped : "fixture-plan-sgd",
                 month: "2026-11-01",
+              },
+            ],
+            [
+              "ynab_get_spending_analysis",
+              {
+                plan_id: live ? mapped : "fixture-plan-sgd",
+                first_month: "2026-11-01",
+                last_month: "2026-11-01",
+                include_open_month: true,
               },
             ],
             [
@@ -374,7 +383,7 @@ for (const live of [false, true])
         assert.equal(
           seen.filter((u) => u.startsWith("https://api.ynab.com/v1/plans"))
             .length,
-          21, // Two report calls add five fixed GETs each.
+          31, // Two report and two single-month analysis calls add five GETs each.
         );
       assert.deepEqual(
         [

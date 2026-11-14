@@ -9,6 +9,7 @@ import {
   categoriesOutput,
   transactionsOutput,
 } from "../dist/tools/contracts.js";
+import { outputSchema as analysisOutput } from "../dist/tools/get-spending-analysis.js";
 import { outputSchema as spendingOutput } from "../dist/tools/get-spending-report.js";
 import { outputSchema } from "../dist/tools/list-plans.js";
 
@@ -71,7 +72,7 @@ export async function runSmoke(value, report = () => {}, token) {
         throw new Error("WRONG_PROTOCOL_ERA");
       const { tools } = await client.listTools(undefined, requestOptions);
       if (
-        tools.length !== 6 ||
+        tools.length !== 7 ||
         tools[0].name !== "ynab_list_plans" ||
         tools[0].annotations?.readOnlyHint !== true ||
         !tools[0].outputSchema
@@ -101,6 +102,15 @@ export async function runSmoke(value, report = () => {}, token) {
         ["ynab_list_accounts", accountsOutput, {}],
         ["ynab_get_month", monthOutput, { month: "2026-11-01" }],
         ["ynab_get_spending_report", spendingOutput, { month: "2026-11-01" }],
+        [
+          "ynab_get_spending_analysis",
+          analysisOutput,
+          {
+            first_month: "2026-11-01",
+            last_month: "2026-11-01",
+            include_open_month: true,
+          },
+        ],
         ["ynab_list_categories", categoriesOutput, {}],
         [
           "ynab_list_transactions",

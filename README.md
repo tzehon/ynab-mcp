@@ -435,3 +435,10 @@ real Chromium consent, denial, refresh and disconnect were also manually verifie
 ## Live owner integration
 
 See [live setup and limits](docs/live-tools.md), [service information](docs/public-service/README.md) and [privacy policy](docs/public-service/PRIVACY.md). Actual hosted/client qualification is tracked separately from synthetic test results.
+
+## Validated spending answers and charts
+
+Use `ynab_get_spending_analysis` for spending questions: one through six explicit
+months, reconciled period/category/comparison facts, canonical answer and generated
+SVG charts from the same data. A failed month produces no partial analysis.
+See [the client presentation contract and limits](docs/spending-analysis.md).

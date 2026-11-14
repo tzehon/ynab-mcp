@@ -6,6 +6,7 @@ import type { LiveService } from "../ynab/live-service.js";
 import { fail } from "./crypto.js";
 import { Enrollment } from "./enrollment.js";
 import { hostedAdmin } from "./hosted-admin.js";
+import { hostedAuthMethods } from "./hosted-clients.js";
 import type { HostedConfig } from "./hosted-config.js";
 import { hostedEngine } from "./hosted-engine.js";
 import { EnrollmentHttp } from "./hosted-enrollment-http.js";
@@ -146,10 +147,8 @@ export async function hostedService(
                     scopes_supported: ["ynab:read", "offline_access"],
                     code_challenge_methods_supported: ["S256"],
                     authorization_response_iss_parameter_supported: true,
-                    token_endpoint_auth_methods_supported: [
-                      "none",
-                      config.webMethod,
-                    ],
+                    token_endpoint_auth_methods_supported:
+                      hostedAuthMethods(config),
                   }),
             );
             return;

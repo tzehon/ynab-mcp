@@ -15,7 +15,12 @@ import { Enrollment } from "../../dist/oauth/enrollment.js";
 import { providerHarness } from "./hosted-provider.mjs";
 export async function hostedApp(
   t,
-  { bootstrap = false, method = "client_secret_post", live = false } = {},
+  {
+    bootstrap = false,
+    method = "client_secret_post",
+    live = false,
+    claude = false,
+  } = {},
 ) {
   const h = await providerHarness(t),
     dir = join(h.root, "app-state"),
@@ -79,6 +84,11 @@ export async function hostedApp(
     YNAB_CLIENT_SECRET: hex(),
     FIXTURE_ALLOWED_PLAN_IDS: '["fixture-plan-sgd"]',
   };
+  if (claude)
+    Object.assign(e, {
+      OAUTH_CLAUDE_CLIENT_ID: "fixture-claude",
+      OAUTH_CLAUDE_SECRET: hex(),
+    });
   if (bootstrap) {
     delete e.AUTH_ALLOWED_SUBJECT;
     Object.assign(e, {

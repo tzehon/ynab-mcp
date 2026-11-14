@@ -9,12 +9,20 @@ import { hostedApp } from "./helpers/hosted-app.mjs";
 import { mapped, other } from "./helpers/ynab-http.mjs";
 
 for (const live of [false, true])
-  for (const profile of ["native", "web", "basic"])
+  for (const profile of [
+    "native",
+    "web",
+    "basic",
+    "claude",
+    "claude-with-basic-web",
+  ])
     test(`hosted HTTP pipeline: ${live ? "live" : "fixtures"} ${profile} consent, both SDK eras, seven tools and disconnect`, async (t) => {
       const { h, e, seen, control } = await hostedApp(t, {
         live,
-        method:
-          profile === "basic" ? "client_secret_basic" : "client_secret_post",
+        claude: profile.startsWith("claude"),
+        method: profile.includes("basic")
+          ? "client_secret_basic"
+          : "client_secret_post",
       });
       const browser = new h.Browser(),
         verifier = randomBytes(32).toString("base64url");
@@ -24,11 +32,17 @@ for (const live of [false, true])
       );
       assert.equal((await browser.fetch("/healthz")).status, 200);
       const clientId =
-        profile === "native" ? e.OAUTH_NATIVE_CLIENT_ID : e.OAUTH_WEB_CLIENT_ID;
+        profile === "native"
+          ? e.OAUTH_NATIVE_CLIENT_ID
+          : profile.startsWith("claude")
+            ? e.OAUTH_CLAUDE_CLIENT_ID
+            : e.OAUTH_WEB_CLIENT_ID;
       const redirectUri =
         profile === "native"
           ? e.OAUTH_NATIVE_CALLBACK.replace(":9876", ":9877")
-          : e.OAUTH_WEB_CALLBACK;
+          : profile.startsWith("claude")
+            ? "https://claude.ai/api/mcp/auth_callback"
+            : e.OAUTH_WEB_CALLBACK;
       const q = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
@@ -93,7 +107,11 @@ for (const live of [false, true])
           },
           body: new URLSearchParams({
             ...values,
-            ...(profile === "web" ? { client_secret: e.OAUTH_WEB_SECRET } : {}),
+            ...(profile === "web"
+              ? { client_secret: e.OAUTH_WEB_SECRET }
+              : profile.startsWith("claude")
+                ? { client_secret: e.OAUTH_CLAUDE_SECRET }
+                : {}),
           }).toString(),
         });
       r = await post({

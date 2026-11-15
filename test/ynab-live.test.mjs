@@ -479,3 +479,43 @@ test("revoking initiating caller cannot cancel another authorized co-waiter's an
   assert.equal(reused.freshness.source, "reused");
   assert.equal(hits, 30);
 });
+
+for (const provisional of [false, true])
+  test(`no upstream reads continue after the sole ${provisional ? "provisional" : "closed"} caller loses authorization`, async (t) => {
+    const gate = deferred(),
+      entered = deferred();
+    let hits = 0,
+      permitted = true;
+    const { live, life, select } = setup(
+      t,
+      analysisFetcher(async () => {
+        if (++hits === 1) {
+          entered.resolve();
+          await gate.promise;
+        }
+      }),
+    );
+    select();
+    const month = `${new Date().toISOString().slice(0, 7)}-01`;
+    const args = provisional
+      ? {
+          plan_id: mapped,
+          first_month: month,
+          last_month: month,
+          include_open_month: true,
+        }
+      : analysisInput;
+    const read = authorizationContext.run(
+      () => {
+        life.checkAuthorization();
+        if (!permitted) throw Error("revoked");
+      },
+      () => live.analysis(args),
+    );
+    const denied = assert.rejects(read, code("UPSTREAM_UNAUTHORIZED"));
+    await entered.promise;
+    permitted = false;
+    gate.resolve();
+    await denied;
+    assert.equal(hits, 1);
+  });

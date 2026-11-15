@@ -30,7 +30,7 @@ export class AnalysisCache<T> {
     refresh: boolean,
     signal: AbortSignal | undefined,
     check: () => void,
-    work: (signal: AbortSignal) => Promise<T>,
+    work: (signal: AbortSignal, authorizedWaiter: () => void) => Promise<T>,
   ): Promise<Snapshot<T> & { reused: boolean }> {
     check();
     if (signal?.aborted) throw new ToolError("UPSTREAM_TIMEOUT");
@@ -58,19 +58,22 @@ export class AnalysisCache<T> {
           .then(async () => {
             if (controller.signal.aborted)
               throw new ToolError("UPSTREAM_TIMEOUT");
-            const value = await work(controller.signal);
+            const authorizedWaiter = () => {
+              if (controller.signal.aborted)
+                throw new ToolError("UPSTREAM_TIMEOUT");
+              for (const waiterCheck of next.checks) {
+                try {
+                  waiterCheck();
+                  return;
+                } catch {}
+              }
+              throw new ToolError("UPSTREAM_UNAUTHORIZED");
+            };
+            const value = await work(controller.signal, authorizedWaiter);
             if (controller.signal.aborted)
               throw new ToolError("UPSTREAM_TIMEOUT");
-            // Caller-specific revocation must not poison valid co-waiters.
-            // Retain a snapshot only if at least one active waiter is authorized.
-            let authorized = false;
-            for (const waiterCheck of next.checks) {
-              try {
-                waiterCheck();
-                authorized = true;
-              } catch {}
-            }
-            if (!authorized) throw new ToolError("UPSTREAM_UNAUTHORIZED");
+            // A revoked reader cannot poison another valid waiter.
+            authorizedWaiter();
             const snapshot = {
               value,
               started,

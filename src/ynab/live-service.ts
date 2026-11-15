@@ -212,12 +212,17 @@ export class LiveService implements LiveTools {
     };
     check();
     const { refresh, ...query } = args;
-    const work = (abort: AbortSignal) =>
-      authorizationContext.run(sharedCheck, () =>
-        this.run(async (client) => {
-          const result = await getSpendingAnalysis(client, query, abort);
-          return analysisSchema.parse(result.structuredContent);
-        }),
+    const work = (abort: AbortSignal, authorizedWaiter = check) =>
+      authorizationContext.run(
+        () => {
+          sharedCheck();
+          authorizedWaiter();
+        },
+        () =>
+          this.run(async (client) => {
+            const result = await getSpendingAnalysis(client, query, abort);
+            return analysisSchema.parse(result.structuredContent);
+          }),
       );
     // Provisional periods always read upstream, including concurrent calls.
     if (args.include_open_month) {

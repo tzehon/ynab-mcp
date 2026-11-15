@@ -1,0 +1,18 @@
+src/ynab/analysis-cache.ts
+  h_60534644ebf874 9,56,64-73,103-104,118
+src/ynab/live-service.ts
+  h_60534644ebf874 11-14,189-190,198,206-212,216-221
+test/ynab-live.test.mjs
+  h_60534644ebf874 450-481
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "944370e243ec06bfaabf8e26700e424e118132f4",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

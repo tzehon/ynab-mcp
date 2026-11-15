@@ -7,6 +7,13 @@ import type { Tokens } from "./upstream.js";
 
 export class HostedLifecycle {
   private failed = false;
+  private disconnectListeners = new Set<() => void>();
+  onDisconnect(listener: () => void) {
+    this.disconnectListeners.add(listener);
+    return () => {
+      this.disconnectListeners.delete(listener);
+    };
+  }
   constructor(
     private store: Store,
     private upstream: Pick<HostedUpstream, "refresh">,
@@ -62,6 +69,7 @@ export class HostedLifecycle {
     if (c?.status !== "active" || c.tokens.expires <= this.store.now()) fail();
   }
   disconnect() {
+    for (const listener of this.disconnectListeners) listener();
     this.guard(() => this.store.clearHostedAuthorization());
   }
   async refresh() {

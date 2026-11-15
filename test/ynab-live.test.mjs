@@ -296,5 +296,154 @@ test("late catalog after disconnect cannot recreate metadata", async (t) => {
   life.disconnect();
   gate.resolve(Response.json(catalog));
   await denied;
-  assert.equal(store.count(), 1);
+  // Only the key check and nonfinancial quota ledger survive disconnect.
+  assert.equal(store.count(), 2);
+  assert.equal(store.get("PlanSelection", "owner"), undefined);
+  assert.equal(store.get("Connection", "owner"), undefined);
+  assert.deepEqual(
+    Object.keys(store.get("YnabRequestBudget", "owner")).sort(),
+    ["attempts", "blockedUntil"],
+  );
+});
+
+const analysisInput = {
+  plan_id: mapped,
+  first_month: "2026-05-01",
+  last_month: "2026-10-01",
+};
+function analysisFetcher(onRequest = () => {}) {
+  return async (url) => {
+    const override = await onRequest(url);
+    if (override) return override;
+    const u = new URL(url);
+    const kind = u.pathname.includes("/months/")
+      ? "month"
+      : u.pathname.split("/").at(-1);
+    const doc = structuredClone(fixtureDocuments[mapped][kind]);
+    if (kind === "month") doc.data.month.month = u.pathname.split("/").at(-1);
+    if (kind === "transactions")
+      for (const t of doc.data.transactions)
+        t.date = u.searchParams.get("since_date");
+    return Response.json(doc);
+  };
+}
+test("hosted six-month analysis reuses only exact complete facts, discloses freshness and supports forced refresh", async (t) => {
+  let hits = 0,
+    fail = false;
+  const { live, select, authorized } = setup(
+    t,
+    analysisFetcher(() => {
+      hits++;
+      if (fail) return new Response(null, { status: 503 });
+    }),
+  );
+  select();
+  const read = (args = {}) =>
+    authorized(() => live.analysis({ ...analysisInput, ...args }));
+  const first = (await read()).structuredContent;
+  assert.equal(hits, 30);
+  assert.equal(first.totals.net_spending_milliunits, 147000);
+  assert.equal(first.freshness.source, "fresh");
+  const second = (await read()).structuredContent;
+  assert.equal(hits, 30);
+  const { freshness: f1, ...facts1 } = first;
+  const { freshness: f2, ...facts2 } = second;
+  assert.deepEqual(facts2, facts1);
+  assert.equal(f2.source, "reused");
+  assert.equal(f2.expires_at, f1.expires_at);
+  await read({ refresh: true });
+  assert.equal(hits, 60);
+  fail = true;
+  await assert.rejects(read({ refresh: true }), code("UPSTREAM_UNAVAILABLE"));
+  await assert.rejects(read(), code("UPSTREAM_UNAVAILABLE"));
+  assert.equal(hits, 62);
+  fail = false;
+  await read();
+  assert.equal(hits, 92);
+  select([]);
+  await assert.rejects(read(), code("PLAN_NOT_ALLOWED"));
+  assert.equal(hits, 92);
+});
+
+test("hosted concurrent analysis coalesces, checks each caller, and disconnect clears retained results", async (t) => {
+  let hits = 0;
+  const gate = deferred();
+  const { live, select, life, authorized } = setup(
+    t,
+    analysisFetcher(async () => {
+      if (++hits === 1) await gate.promise;
+    }),
+  );
+  select();
+  let permitted = true;
+  const a = authorized(() => live.analysis(analysisInput));
+  const b = authorizationContext.run(
+    () => {
+      life.checkAuthorization();
+      if (!permitted) throw Error("revoked");
+    },
+    () => live.analysis(analysisInput),
+  );
+  const denied = assert.rejects(b, code("UPSTREAM_UNAUTHORIZED"));
+  permitted = false;
+  gate.resolve();
+  await a;
+  await denied;
+  assert.equal(hits, 30);
+  life.disconnect();
+  await assert.rejects(
+    authorized(() => live.analysis(analysisInput)),
+    code("UPSTREAM_UNAUTHORIZED"),
+  );
+  assert.equal(hits, 30);
+});
+
+test("hosted provisional analysis always fetches and denied identifiers never use cache", async (t) => {
+  let hits = 0;
+  const { live, select, authorized } = setup(
+    t,
+    analysisFetcher(() => {
+      hits++;
+    }),
+  );
+  select();
+  const month = new Date().toISOString().slice(0, 7) + "-01";
+  for (let i = 0; i < 2; i++) {
+    const result = await authorized(() =>
+      live.analysis({
+        plan_id: mapped,
+        first_month: month,
+        last_month: month,
+        include_open_month: true,
+      }),
+    );
+    assert.equal(result.structuredContent.freshness.max_age_seconds, 0);
+  }
+  assert.equal(hits, 10);
+  await assert.rejects(
+    authorized(() => live.analysis({ ...analysisInput, plan_id: other })),
+    code("PLAN_NOT_ALLOWED"),
+  );
+  assert.equal(hits, 10);
+});
+
+test("hosted 429 activates shared durable cooldown for raw reads, analysis and catalog without retries", async (t) => {
+  let hits = 0;
+  const { live, select, authorized, store } = setup(t, async () => {
+    hits++;
+    return new Response(null, { status: 429 });
+  });
+  select();
+  await assert.rejects(
+    authorized(() => live.analysis(analysisInput)),
+    code("UPSTREAM_RATE_LIMITED"),
+  );
+  await assert.rejects(
+    authorized(() => live.run((c) => listAccounts(c, { plan_id: mapped }))),
+    code("UPSTREAM_RATE_LIMITED"),
+  );
+  await assert.rejects(live.discover(), code("UPSTREAM_RATE_LIMITED"));
+  assert.equal(hits, 1);
+  assert.equal(store.get("YnabRequestBudget", "owner").attempts.length, 1);
+  assert.ok(store.get("YnabRequestBudget", "owner").blockedUntil > Date.now());
 });

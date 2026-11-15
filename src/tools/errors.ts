@@ -10,7 +10,8 @@ export const messages = Object.freeze({
   NOT_FOUND: "Requested data was not found.",
   UPSTREAM_UNAUTHORIZED: "YNAB upstream authorization failed.",
   UPSTREAM_FORBIDDEN: "YNAB upstream access was denied.",
-  UPSTREAM_RATE_LIMITED: "YNAB upstream rate limit reached.",
+  UPSTREAM_RATE_LIMITED:
+    "YNAB request budget is exhausted or cooling down. Stop automatic retries and wait up to one hour before a fresh read. No complete new result is available; do not substitute partial totals, zero or silently stale figures.",
   UPSTREAM_UNAVAILABLE: "YNAB upstream is unavailable.",
   UPSTREAM_TIMEOUT: "YNAB upstream operation did not complete.",
   UPSTREAM_RESPONSE_TOO_LARGE: "YNAB upstream response exceeds limits.",

@@ -1,10 +1,10 @@
 # Privacy policy
 
-Last updated: 13 November 2026. This policy covers MCP Tools for YNAB, a private, owner-operated service. It is not a public multi-user service.
+Last updated: 16 November 2026. This policy covers MCP Tools for YNAB, a private, owner-operated service. It is not a public multi-user service.
 
 ## Information and purpose
 
-The service verifies its owner and authorizes Codex and ChatGPT to use five read-only tools. It processes a YNAB account identifier, OAuth codes and access/refresh credentials, client permissions, short-lived setup records and browser session cookies. It does not collect your YNAB password.
+The service verifies its owner and authorizes Codex and ChatGPT to use seven read-only tools. It processes a YNAB account identifier, OAuth codes and access/refresh credentials, client permissions, short-lived setup records and browser session cookies. It does not collect your YNAB password.
 
 In live mode it retrieves selected-plan accounts, month summaries, category metadata and bounded transactions on request. Financial responses are processed transiently and returned to the requesting client; they are not stored in the application database. Selected plan IDs, names and currencies are saved as encrypted metadata. Fixture mode returns invented data. No write tools are provided.
 
@@ -18,7 +18,7 @@ Railway hosts the service and terminates HTTPS, so it processes network traffic 
 
 Authorization codes last up to one minute, interactions and plan-selection forms up to five minutes, normal browser sessions and service access tokens up to one hour. Continued-access grants expire after seven idle days or thirty days overall. Expired records become unusable; storage is reclaimed in bounded batches during later writes, not necessarily at expiry.
 
-Selected-plan metadata remains until replacement or disconnect. Upstream credentials remain until disconnect or invalidation; usability follows YNAB's expiry/revocation rules. Owner binding and enrollment records persist to prevent unauthorized re-enrollment. Financial tool results are not persisted by this application; client conversation retention is separate.
+Selected-plan metadata remains until replacement or disconnect. Upstream credentials remain until disconnect or invalidation; usability follows YNAB's expiry/revocation rules. Owner binding and enrollment records persist to prevent unauthorized re-enrollment.  Complete closed-period spending reports may remain in process memory for up to two minutes from fetch start (at most four snapshots), with original timestamps and explicit freshness. They are never saved in the application database. Selection changes, disconnect and shutdown clear these snapshots. Nonfinancial request timestamps and rate-limit cooldown are encrypted in persistent storage for up to one hour and retained across disconnect to prevent repeated upstream requests. Financial tool results are not persisted by this application; client conversation retention is separate.
 
 ## Disconnect and deletion
 

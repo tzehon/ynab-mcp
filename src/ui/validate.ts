@@ -172,7 +172,13 @@ export function validationRuntime(
     )
       fail();
     const canonical = ordered(schema, r) as Analysis;
-    const { evidence_digest, canonical_answer, charts, ...facts } = canonical;
+    const {
+      evidence_digest,
+      canonical_answer,
+      charts,
+      freshness: _freshness,
+      ...facts
+    } = canonical;
     const bytes = await crypto.subtle.digest(
       "SHA-256",
       new TextEncoder().encode(JSON.stringify(facts)),

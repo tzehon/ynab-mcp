@@ -94,3 +94,41 @@ are separate release acceptance; publish only generic outcomes in Git/Jira.
 
 See [the reconciled spending view](spending-view.md) for the standard MCP App,
 private Claude Code capture preview, validation boundaries and client acceptance.
+
+## Freshness and upstream rate limits
+
+Hosted closed-period analysis can reuse an identical, complete reconciled snapshot
+for **120 seconds from fetch start**. At most four snapshots remain in process
+memory; no financial cache is written to disk. `freshness.source` is `fresh` or
+`reused`; `fetched_at` is the start of that retrieval and `expires_at` is its
+absolute reuse deadline. Original `as_of`, monthly timestamps, `evidence_digest`,
+amounts and charts are preserved. A reused snapshot is not a current live read.
+Cached results do not imply that historical YNAB records cannot change.
+
+Set `refresh: true` for the latest data, especially after edits in YNAB. This
+invalidates the matching cached result before reading; a failed refresh never
+returns it as fallback. A forced refresh while the same key is being fetched
+returns BUSY rather than joining older work. Provisional (`include_open_month`)
+requests always fetch, with max_age_seconds zero. Identical concurrent normal
+requests share work; each caller's authorization is rechecked before delivery.
+Selection changes, disconnect and shutdown clear the cache. Cancelled, failed,
+partial and unreconciled results are never cached. Expiry is absolute, not sliding.
+
+The original five ordered reconciliation reads per month remain unchanged: a
+fresh six-month report costs 30 provider GETs; an identical reused report costs
+zero. Use a returned complete report for follow-up chart views rather than asking
+for another fresh analysis. No multi-month atomicity is promised.
+
+All hosted budget/catalog GETs share a conservative owner-wide 200-attempt rolling
+hour ledger. Only request timestamps and cooldown are encrypted in the existing
+state store; they survive restart, token rotation and disconnect until expiry.
+Attempt reservation is durable before dispatch; ambiguous network failures count.
+YNAB may count other requests not observed by this server. An upstream 429 starts
+a conservative one-hour cooldown because its exact reset time is unknown. Blocked
+requests send no provider GETs, and there is no automatic retry. The error tells
+clients to stop retrying and wait; never replace a failed analysis with partial,
+zero, or silently stale values. Existing snapshots can still be explicitly used
+within their original two-minute lifetime; a forced refresh cannot fall back.
+
+Synthetic quota/cancellation tests do not intentionally exhaust the live account.
+Live acceptance separately checks actual complete report facts, freshness and reuse.

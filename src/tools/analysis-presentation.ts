@@ -3,7 +3,7 @@ import type { outputSchema } from "./spending-analysis.js";
 export type Analysis = z.infer<typeof outputSchema>;
 export type Facts = Omit<
   Analysis,
-  "evidence_digest" | "canonical_answer" | "charts"
+  "evidence_digest" | "canonical_answer" | "charts" | "freshness"
 >;
 // Self-contained pure presentation shared by the server and private views.
 // No provider reads, aggregation, persistent I/O or browser-dependent behavior.

@@ -12,6 +12,7 @@ export const inputSchema = z.strictObject({
   first_month: month,
   last_month: month,
   comparison_month: month.optional(),
+  refresh: z.boolean().default(false),
   include_open_month: z.boolean().default(false),
 });
 type Input = z.infer<typeof inputSchema>;
@@ -44,6 +45,14 @@ const comparisonSchema = z.strictObject({
 });
 export const outputSchema = z.strictObject({
   ...common,
+  freshness: z
+    .strictObject({
+      source: z.enum(["fresh", "reused"]),
+      fetched_at: z.iso.datetime(),
+      expires_at: z.iso.datetime(),
+      max_age_seconds: z.union([z.literal(0), z.literal(120)]),
+    })
+    .optional(),
   truncated: z.literal(false),
   complete: z.literal(true),
   method: z.literal("validated-spending-analysis-v1"),

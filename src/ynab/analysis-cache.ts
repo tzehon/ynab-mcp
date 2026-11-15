@@ -6,6 +6,7 @@ type Pending<T> = {
   controller: AbortController;
   promise: Promise<Snapshot<T>>;
   waiters: number;
+  checks: Set<() => void>;
 };
 
 /** Bounded process memory only. Callers validate data and authorization. */
@@ -52,14 +53,24 @@ export class AnalysisCache<T> {
       const next: Pending<T> = {
         controller,
         waiters: 0,
+        checks: new Set(),
         promise: Promise.resolve()
           .then(async () => {
             if (controller.signal.aborted)
               throw new ToolError("UPSTREAM_TIMEOUT");
             const value = await work(controller.signal);
-            check();
             if (controller.signal.aborted)
               throw new ToolError("UPSTREAM_TIMEOUT");
+            // Caller-specific revocation must not poison valid co-waiters.
+            // Retain a snapshot only if at least one active waiter is authorized.
+            let authorized = false;
+            for (const waiterCheck of next.checks) {
+              try {
+                waiterCheck();
+                authorized = true;
+              } catch {}
+            }
+            if (!authorized) throw new ToolError("UPSTREAM_UNAUTHORIZED");
             const snapshot = {
               value,
               started,
@@ -89,6 +100,8 @@ export class AnalysisCache<T> {
       this.pending.set(key, task);
     }
     task.waiters++;
+    const waiterCheck = () => check();
+    task.checks.add(waiterCheck);
     let abort = () => {};
     const cancelled = new Promise<never>((_, reject) => {
       abort = () => reject(new ToolError("UPSTREAM_TIMEOUT"));
@@ -102,6 +115,7 @@ export class AnalysisCache<T> {
       return { ...structuredClone(result), reused: joined };
     } finally {
       signal?.removeEventListener("abort", abort);
+      task.checks.delete(waiterCheck);
       if (--task.waiters === 0 && this.pending.get(key) === task) {
         task.controller.abort();
         this.pending.delete(key);

@@ -8,7 +8,10 @@ import { AnalysisCache } from "./analysis-cache.js";
 import { RequestBudget } from "./request-budget.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { requireCurrentAuthorization } from "../auth/authorization-context.js";
+import {
+  authorizationContext,
+  requireCurrentAuthorization,
+} from "../auth/authorization-context.js";
 import type { Config } from "../config.js";
 import type { HostedLifecycle } from "../oauth/hosted-lifecycle.js";
 import type { Store } from "../oauth/store.js";
@@ -183,6 +186,8 @@ export class LiveService implements LiveTools {
   }
   async analysis(value: unknown, signal?: AbortSignal) {
     requireCurrentAuthorization();
+    const callerAuthorization = authorizationContext.getStore();
+    if (!callerAuthorization) throw new ToolError("UPSTREAM_UNAUTHORIZED");
     const { args } = requestedMonths(value);
     const selection = this.selection();
     const scope = JSON.stringify([selection.generation, selection.version]);
@@ -190,8 +195,7 @@ export class LiveService implements LiveTools {
       this.cache.clear();
       this.cacheScope = scope;
     }
-    const check = () => {
-      requireCurrentAuthorization();
+    const sharedCheck = () => {
       this.current(selection.generation);
       if (
         this.selection().version !== selection.version ||
@@ -199,13 +203,22 @@ export class LiveService implements LiveTools {
       )
         throw new ToolError("PLAN_NOT_ALLOWED");
     };
+    const check = () => {
+      authorizationContext.run(
+        callerAuthorization,
+        requireCurrentAuthorization,
+      );
+      sharedCheck();
+    };
     check();
     const { refresh, ...query } = args;
     const work = (abort: AbortSignal) =>
-      this.run(async (client) => {
-        const result = await getSpendingAnalysis(client, query, abort);
-        return analysisSchema.parse(result.structuredContent);
-      });
+      authorizationContext.run(sharedCheck, () =>
+        this.run(async (client) => {
+          const result = await getSpendingAnalysis(client, query, abort);
+          return analysisSchema.parse(result.structuredContent);
+        }),
+      );
     // Provisional periods always read upstream, including concurrent calls.
     if (args.include_open_month) {
       const started = Date.now();

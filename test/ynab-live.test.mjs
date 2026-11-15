@@ -447,3 +447,35 @@ test("hosted 429 activates shared durable cooldown for raw reads, analysis and c
   assert.equal(store.get("YnabRequestBudget", "owner").attempts.length, 1);
   assert.ok(store.get("YnabRequestBudget", "owner").blockedUntil > Date.now());
 });
+
+test("revoking initiating caller cannot cancel another authorized co-waiter's analysis", async (t) => {
+  const gate = deferred();
+  let hits = 0,
+    initiatorAllowed = true;
+  const { live, life, select, authorized } = setup(
+    t,
+    analysisFetcher(async () => {
+      if (++hits === 1) await gate.promise;
+    }),
+  );
+  select();
+  const first = authorizationContext.run(
+    () => {
+      life.checkAuthorization();
+      if (!initiatorAllowed) throw Error("revoked");
+    },
+    () => live.analysis(analysisInput),
+  );
+  const denied = assert.rejects(first, code("UPSTREAM_UNAUTHORIZED"));
+  const second = authorized(() => live.analysis(analysisInput));
+  initiatorAllowed = false;
+  gate.resolve();
+  const report = (await second).structuredContent;
+  await denied;
+  assert.equal(report.complete, true);
+  assert.equal(hits, 30);
+  const reused = (await authorized(() => live.analysis(analysisInput)))
+    .structuredContent;
+  assert.equal(reused.freshness.source, "reused");
+  assert.equal(hits, 30);
+});

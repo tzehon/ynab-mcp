@@ -1,3 +1,11 @@
+import { getSpendingAnalysis } from "../tools/get-spending-analysis.js";
+import {
+  outputSchema as analysisSchema,
+  requestedMonths,
+} from "../tools/spending-analysis.js";
+import { success } from "../tools/contracts.js";
+import { AnalysisCache } from "./analysis-cache.js";
+import { RequestBudget } from "./request-budget.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireCurrentAuthorization } from "../auth/authorization-context.js";
@@ -56,18 +64,36 @@ function unique(plans: readonly Plan[]) {
 export interface LiveTools {
   plans(): z.infer<typeof livePlansOutput>;
   run<T>(work: (client: MockYnabClient) => Promise<T>): Promise<T>;
+  analysis(
+    value: unknown,
+    signal?: AbortSignal,
+  ): Promise<ReturnType<typeof success<typeof analysisSchema>>>;
   close(): void;
 }
 export class LiveService implements LiveTools {
   private limits = new CallLimits();
   private clients = new Set<MockYnabClient>();
   private closed = false;
+  private cache = new AnalysisCache<z.infer<typeof analysisSchema>>();
+  private cacheScope = "";
+  private unsubscribe: () => void;
+  private budget: RequestBudget;
   constructor(
     private config: Config,
     private store: Store,
     private lifecycle: HostedLifecycle,
     private fetcher: typeof fetch,
-  ) {}
+  ) {
+    this.budget = new RequestBudget(store, lifecycle.owner);
+    this.unsubscribe = lifecycle.onDisconnect(() => this.cache.clear());
+  }
+  private budgetFetch: typeof fetch = async (url, init) => {
+    if (init?.signal?.aborted) throw new ToolError("UPSTREAM_TIMEOUT");
+    this.budget.admit();
+    const response = await this.fetcher(url, init);
+    if (response.status === 429) this.budget.limited();
+    return response;
+  };
   private current(generation?: string) {
     if (this.closed) throw new ToolError("UPSTREAM_UNAUTHORIZED");
     const c = this.lifecycle.current();
@@ -128,7 +154,7 @@ export class LiveService implements LiveTools {
           check();
           return token;
         },
-        fetcher: this.fetcher,
+        fetcher: this.budgetFetch,
       }),
       undefined,
       {
@@ -155,12 +181,70 @@ export class LiveService implements LiveTools {
       this.clients.delete(client);
     }
   }
+  async analysis(value: unknown, signal?: AbortSignal) {
+    requireCurrentAuthorization();
+    const { args } = requestedMonths(value);
+    const selection = this.selection();
+    const scope = JSON.stringify([selection.generation, selection.version]);
+    if (scope !== this.cacheScope) {
+      this.cache.clear();
+      this.cacheScope = scope;
+    }
+    const check = () => {
+      requireCurrentAuthorization();
+      this.current(selection.generation);
+      if (
+        this.selection().version !== selection.version ||
+        !selection.plans.some((p) => p.id === args.plan_id)
+      )
+        throw new ToolError("PLAN_NOT_ALLOWED");
+    };
+    check();
+    const { refresh, ...query } = args;
+    const work = (abort: AbortSignal) =>
+      this.run(async (client) => {
+        const result = await getSpendingAnalysis(client, query, abort);
+        return analysisSchema.parse(result.structuredContent);
+      });
+    // Provisional periods always read upstream, including concurrent calls.
+    if (args.include_open_month) {
+      const started = Date.now();
+      const result = await work(signal ?? new AbortController().signal);
+      check();
+      return success(analysisSchema, {
+        ...result,
+        freshness: {
+          source: "fresh",
+          fetched_at: new Date(started).toISOString(),
+          expires_at: new Date(started).toISOString(),
+          max_age_seconds: 0,
+        },
+      });
+    }
+    const result = await this.cache.get(
+      JSON.stringify([scope, query]),
+      refresh,
+      signal,
+      check,
+      work,
+    );
+    check();
+    return success(analysisSchema, {
+      ...result.value,
+      freshness: {
+        source: result.reused ? "reused" : "fresh",
+        fetched_at: new Date(result.started).toISOString(),
+        expires_at: new Date(result.expires).toISOString(),
+        max_age_seconds: 120,
+      },
+    });
+  }
   async discover(signal?: AbortSignal) {
     const generation = this.current().generation;
     return this.limits.run(signal, async (abort, check) => {
       const response = await createCatalogTransport({
         accessToken: (signal) => this.token(generation, signal),
-        fetcher: this.fetcher,
+        fetcher: this.budgetFetch,
       })(abort);
       check();
       if (response.status !== 200)
@@ -207,6 +291,7 @@ export class LiveService implements LiveTools {
       ids.some((id) => !plans.some((p) => p.id === id))
     )
       throw new ToolError("PLAN_NOT_ALLOWED");
+    this.cache.clear();
     const selected = plans.filter((p) => ids.includes(p.id));
     this.store.put(
       "PlanSelection",
@@ -221,6 +306,8 @@ export class LiveService implements LiveTools {
   }
   close() {
     this.closed = true;
+    this.unsubscribe();
+    this.cache.clear();
     this.limits.close();
     for (const client of this.clients) client.close();
   }

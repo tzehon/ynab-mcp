@@ -17,7 +17,10 @@ inspection; transaction pages are drill-down, with nested splits preserved.
   reports sequentially, with a nine-second overall deadline inside the existing
   ten-second HTTP connection limit. Preserve the four-call process budget, per-month
   limits, generation/owner/selection checks and fixed upstream routes. No caller-
-  supplied financial facts, financial cache, parallel provider fan-out or fallback.
+  supplied financial facts, parallel provider fan-out or partial/stale-on-error fallback.
+  The hosted-only exception is at most four complete closed-period analysis snapshots
+  in memory for 120 seconds from fetch start, never persisted; see the rate-limit
+  safeguards in [analysis](spending-analysis.md). Original as_of/digest remain intact.
 - Validate complete compatible reconciled evidence before producing any answer or
   chart. Fail closed on missing/inconsistent/oversized evidence, cancellation or
   revocation. Unknown is not zero; open months require explicit provisional opt-in.

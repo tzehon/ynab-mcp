@@ -299,3 +299,21 @@ test("export creates protected offline files and rejects existing output, symlin
   await chmod(src, 0o644);
   await assert.rejects(exportPreview(src, join(dir, "other")));
 });
+
+test("fresh and reused hosted snapshots validate unchanged financial digest and charts", async () => {
+  for (const source of ["fresh", "reused"]) {
+    const r = sample();
+    r.freshness = {
+      source,
+      fetched_at: "2026-11-14T00:00:00Z",
+      expires_at: "2026-11-14T00:02:00Z",
+      max_age_seconds: 120,
+    };
+    assert.equal(
+      await spendingValidator.validate(r, { ...input, refresh: false }),
+      r,
+    );
+    r.totals.net_spending_milliunits++;
+    await assert.rejects(spendingValidator.validate(r, input));
+  }
+});

@@ -246,7 +246,7 @@ export class Store {
     this.transaction(() => {
       this.db
         .prepare(
-          "DELETE FROM records WHERE model NOT IN ('KeyCheck','OwnerBinding','Enrollment','HostedSchema')",
+          "DELETE FROM records WHERE model NOT IN ('KeyCheck','OwnerBinding','Enrollment','HostedSchema','YnabRequestBudget')",
         )
         .run();
       this.db.exec("DELETE FROM links");

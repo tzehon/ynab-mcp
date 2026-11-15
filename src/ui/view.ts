@@ -41,6 +41,8 @@ export function viewRuntime(validator: ReturnType<typeof validationRuntime>) {
   function show(report: Analysis) {
     answer.textContent = report.canonical_answer;
     evidence.textContent = `Source: ${report.source} · Retrieved ${report.as_of} · Evidence ${report.evidence_digest}`;
+    if (report.freshness)
+      evidence.textContent += ` · ${report.freshness.source === "reused" ? "Reused snapshot" : "Fresh read"} · Reuse deadline ${report.freshness.expires_at}`;
     for (const item of report.charts) {
       const button = document.createElement("button");
       button.type = "button";

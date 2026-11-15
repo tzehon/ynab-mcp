@@ -159,8 +159,10 @@ async function boundedGet(
         child,
         dispose,
       );
-    } catch {
+    } catch (error) {
       check(child);
+      if (error instanceof ToolError && error.code === "UPSTREAM_RATE_LIMITED")
+        throw error;
       throw new ToolError("UPSTREAM_FAILURE");
     }
     check(child);

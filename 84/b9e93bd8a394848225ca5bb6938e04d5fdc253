@@ -1,0 +1,88 @@
+src/oauth/store.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 249
+test/rate-safeguards.test.mjs
+  s_eb80e8fdbdac14::t_01ca5c51167838 1-20,22-39,41-60,62-83,85-117,119-129,131-139,141-150,153-156,158-192,194-198,200-206,208-216,218-220,222-223
+  s_eb80e8fdbdac14::t_c913380b81b309 21
+  s_eb80e8fdbdac14::t_1f8ac858681c57 40
+  s_eb80e8fdbdac14::t_37d486f957820b 61
+  s_eb80e8fdbdac14::t_adda90724f432f 84
+  s_eb80e8fdbdac14::t_94909a93095b49 118
+  s_eb80e8fdbdac14::t_db54ff2c487915 130
+  s_eb80e8fdbdac14::t_ab89de45691ea2 140
+  s_eb80e8fdbdac14::t_f5839ef2d2f8a8 151-152
+  s_eb80e8fdbdac14::t_7a84cea3dd76a5 157
+  s_eb80e8fdbdac14::t_dc291c3745c0f3 193
+  s_eb80e8fdbdac14::t_748b92fc9866cc 199
+  s_eb80e8fdbdac14::t_e8fc76b3dc3776 207
+  s_eb80e8fdbdac14::t_6caaf4b73a77f0 217
+  s_eb80e8fdbdac14::t_38e86e1f584d11 221
+src/mcp.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 60,107,115-117
+  s_eb80e8fdbdac14::t_d536d85cd58591 118-119
+src/tools/spending-analysis.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 15,48-55
+src/tools/errors.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 13-14
+src/ynab/http-transport.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 162,164-165
+src/oauth/hosted-lifecycle.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 10-16,72
+src/ynab/live-service.ts
+  s_eb80e8fdbdac14::t_fbe9c10c02293c 1-3,5-8,67-68,70,77-80,86-96,157,184-220,222-228,230-238,240-241,247,294,309-310
+  s_eb80e8fdbdac14::t_119fc9fc05e295 4
+  s_eb80e8fdbdac14::t_0ac89f6be2f950 69
+  s_eb80e8fdbdac14::t_10aa8ca8aefe7d 221
+  s_eb80e8fdbdac14::t_1c9c63e20d8485 229
+  s_eb80e8fdbdac14::t_321a065d60391f 239
+src/ynab/analysis-cache.ts
+  s_eb80e8fdbdac14::t_a7bd5e9a47dac3 1-65,67-68,74-76,78-111
+  s_eb80e8fdbdac14::t_a00c33b658755c 66,69-73,77
+src/ynab/request-budget.ts
+  s_eb80e8fdbdac14::t_a7bd5e9a47dac3 1-16,18-21,23-35,37-53,55-59
+  s_eb80e8fdbdac14::t_9eb23cb54ba520 17
+  s_eb80e8fdbdac14::t_f9166e544fff1c 22
+  s_eb80e8fdbdac14::t_6f0bf833595380 36
+  s_eb80e8fdbdac14::t_08c16e8f70cb22 54
+src/tools/analysis-presentation.ts
+  s_eb80e8fdbdac14::t_3fb95c8102ad43 6
+src/ui/validate.ts
+  s_eb80e8fdbdac14::t_317c32b3636df3 175-181
+src/ui/view.ts
+  s_eb80e8fdbdac14::t_4025152b8aafb8 44-45
+test/spending-view.test.mjs
+  s_eb80e8fdbdac14::t_6f86bc4bca61d8 302-319
+test/ynab-live.test.mjs
+  s_eb80e8fdbdac14::t_ac30ac31d868db 299-448
+docs/development-contracts.md
+  s_1d643f41a6b8a6::t_e9bfc240239394 20-23
+docs/public-service/PRIVACY.md
+  s_1d643f41a6b8a6::t_31f520d24e52c6 3,7,21
+docs/spending-analysis.md
+  s_1d643f41a6b8a6::t_6f50986bd147e1 97-134
+src/http/hosted-pages.ts
+  s_1d643f41a6b8a6::t_9f2b367337fefe 9,16,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84b9e93bd8a394848225ca5bb6938e04d5fdc253",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    },
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

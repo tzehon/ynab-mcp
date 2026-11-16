@@ -1,0 +1,21 @@
+docs/demos/autofix-2026-11-16/failure-excerpts.log
+  s_1d643f41a6b8a6::t_913d45823a67a2 1-9
+docs/demos/autofix-2026-11-16/validation-excerpts.log
+  s_1d643f41a6b8a6::t_a299698aa7f503 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "640f634746a346b293a48f2efe4e33c351edbb24",
+  "prompts": {},
+  "sessions": {
+    "s_1d643f41a6b8a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "unknown"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

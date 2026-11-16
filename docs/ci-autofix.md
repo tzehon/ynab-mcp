@@ -40,7 +40,8 @@ to this repository's admission, patch validation and review requirements.
 ## Follow an attempt
 
 The source PR receives an **Autofix started** bot comment linking its exact commit,
-failing CI and **watch autofix** run. Follow that run through `admit`, `generate`,
+failing CI and **watch autofix** run. The run title names the source branch and
+failed CI run number. Follow that run through `admit`, `generate`,
 `validate`, `publish` and `report`.
 
 The final **Autofix outcome** comment links the generated **Autofix for #N —

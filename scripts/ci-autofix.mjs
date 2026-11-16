@@ -11,6 +11,84 @@ const fail = () => {
   throw new Error("Autofix boundary check failed; no publication.");
 };
 
+function positiveId(value) {
+  if (
+    !/^[1-9][0-9]*$/.test(String(value)) ||
+    !Number.isSafeInteger(Number(value))
+  )
+    fail();
+  return String(value);
+}
+
+export function traceLinks(run, pr, autofixRunId = process.env.GITHUB_RUN_ID) {
+  if (!shaPattern.test(run.head_sha)) fail();
+  const root = `https://github.com/${repository}`;
+  return {
+    source: `${root}/pull/${positiveId(pr.number)}`,
+    commit: `${root}/commit/${run.head_sha}`,
+    failure: `${root}/actions/runs/${positiveId(run.id)}`,
+    autofix: `${root}/actions/runs/${positiveId(autofixRunId)}`,
+  };
+}
+
+async function reportOutcome(ctx, links) {
+  const { pr, run, branch } = ctx;
+  const marker = `<!-- codex-autofix-outcome:${positiveId(process.env.GITHUB_RUN_ID)} -->`;
+  const comments = await pages(`issues/${pr.number}/comments`);
+  const botComment = (text) =>
+    comments.some(
+      (c) => c.user?.login === "github-actions[bot]" && c.body.includes(text),
+    );
+  if (!botComment(`<!-- codex-autofix:${run.head_sha} -->`)) fail();
+  if (botComment(marker)) return;
+  const results = [
+    process.env.GENERATE_RESULT,
+    process.env.VALIDATE_RESULT,
+    process.env.PUBLISH_RESULT,
+  ];
+  if (
+    results.some(
+      (r) => !["success", "failure", "cancelled", "skipped"].includes(r),
+    )
+  )
+    fail();
+  let outcome;
+  if (
+    results.every((r) => r === "success") &&
+    process.env.PATCH_PROPOSED === "true"
+  ) {
+    const repairs = await pages(
+      `pulls?state=open&head=tzehon:${branch}&base=${pr.head.ref}`,
+    );
+    const matches = repairs.filter(
+      (r) =>
+        r.user?.login === "github-actions[bot]" &&
+        r.state === "open" &&
+        r.draft === true &&
+        r.head?.ref === branch &&
+        r.head?.repo?.full_name === repository &&
+        r.base?.ref === pr.head.ref &&
+        r.base?.repo?.full_name === repository,
+    );
+    if (matches.length !== 1) fail();
+    const number = positiveId(matches[0].number);
+    outcome = `**Draft repair ready: [#${number}](https://github.com/${repository}/pull/${number}).** Independent full tests and container validation passed before publication. The repair targets this PR's feature branch; review and normal PR CI remain required. Bot-created CI may need **Approve workflows to run**.`;
+  } else if (
+    results[0] === "success" &&
+    process.env.PATCH_PROPOSED !== "true" &&
+    results[1] === "skipped" &&
+    results[2] === "skipped"
+  ) {
+    outcome =
+      "**No repair proposed.** The attempt completed without an admissible patch; no repair PR was published.";
+  } else {
+    outcome = `**Autofix did not complete successfully.** Generation: ${results[0]}; independent validation: ${results[1]}; publication: ${results[2]}. Inspect the run for the failed or cancelled stage; no reviewed or merged fix is claimed.`;
+  }
+  await api(`issues/${pr.number}/comments`, "POST", {
+    body: `${marker}\n### Autofix outcome\n\n${outcome}\n\nFollow the chain: [source PR #${pr.number}](${links.source}) → [failing CI](${links.failure}) → [autofix run](${links.autofix}). Offending [commit ${run.head_sha.slice(0, 7)}](${links.commit}).\n\nOne attempt per source commit. No automatic approval, merge or deployment.`,
+  });
+}
+
 export function eligible(run, pr, jobs) {
   return (
     run.name === "PR checks" &&
@@ -280,6 +358,8 @@ export async function main(mode) {
     return;
   }
   const { run, pr, key, metadata, branch } = ctx;
+  const links = traceLinks(run, pr);
+  if (mode === "report") return reportOutcome(ctx, links);
   if (mode === "admit") {
     const marker = `<!-- codex-autofix:${run.head_sha} -->`;
     const comments = await pages(`issues/${pr.number}/comments`);
@@ -293,7 +373,7 @@ export async function main(mode) {
       return;
     }
     await api(`issues/${pr.number}/comments`, "POST", {
-      body: `${marker}\nOne bounded Codex CI-repair attempt started. Any result will be a draft PR; existing review/approval requirements remain. This marker also prevents repeated API use if generation fails.`,
+      body: `${marker}\n### Autofix started\n\n[Source PR #${pr.number}](${links.source}) → [failing CI](${links.failure}) → **[watch autofix](${links.autofix})**. Offending [commit ${run.head_sha.slice(0, 7)}](${links.commit}).\n\nThe run checks eligibility, proposes a bounded patch, independently validates it, then publishes a draft repair to this feature branch. An outcome comment will link the repair or explain why none was published. One attempt per source commit, including failed/no-patch attempts. No automatic approval, merge or deployment.`,
     });
     appendFileSync(
       process.env.GITHUB_OUTPUT,
@@ -336,12 +416,12 @@ export async function main(mode) {
     sha: commit.sha,
   });
   const body =
-    `Automated repair candidate for #${pr.number}, after [CI failure](${run.html_url}).\n\n` +
+    `**Follow the autofix:** [source PR #${pr.number}](${links.source}) → [failing CI](${links.failure}) → [autofix run](${links.autofix}) → this draft repair. Offending [commit ${run.head_sha.slice(0, 7)}](${links.commit}).\n\n` +
     `Targets the original feature branch; never merge directly to main or deploy. Source/test-only patch passed isolated validation. Review every change for weakened tests or changed financial/auth behavior. Original approval links below are context, not new approval.\n\n` +
     `GitHub-token-created PR checks require a maintainer to select Approve workflows to run. Revalidate Jira scope, complete normal CI and native code/security reviews, then rebase-integrate and clean up. No approval is inferred from this candidate.\n\n` +
     `Issue: ${metadata.issueUrl}\n\n\`\`\`ynab-metadata\n${JSON.stringify(metadata, null, 2)}\n\`\`\`\n`;
   const result = await api("pulls", "POST", {
-    title: `${key}: CI repair for #${pr.number}`,
+    title: `${key}: Autofix for #${pr.number} — validated repair`,
     head: branch,
     base: pr.head.ref,
     draft: true,

@@ -12,6 +12,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import {
   eligible,
+  traceLinks,
   repairMetadata,
   validatePatch,
   applyPatch,
@@ -228,6 +229,7 @@ test("admission persists a bot claim and suppresses duplicate attempts", async (
     GITHUB_REPOSITORY: "tzehon/ynab-mcp",
     GITHUB_OUTPUT: join(dir, "output"),
     GH_TOKEN: "synthetic",
+    GITHUB_RUN_ID: "456",
   });
   globalThis.fetch = async (url, opts) => {
     assert.equal(new URL(url).origin, "https://api.github.com");
@@ -252,6 +254,9 @@ test("admission persists a bot claim and suppresses duplicate attempts", async (
     await main("admit");
     await main("admit");
     assert.equal(comments.length, 1);
+    assert.match(comments[0].body, /actions\/runs\/123/);
+    assert.match(comments[0].body, /actions\/runs\/456/);
+    assert.ok(comments[0].body.includes(`commit/${sha}`));
     assert.match(readFileSync(join(dir, "output"), "utf8"), /eligible=true/);
   } finally {
     globalThis.fetch = originalFetch;
@@ -303,6 +308,7 @@ test("publisher rechecks a stale head before creating a branch and never execute
     SOURCE_DIR: source,
     PATCH_FILE: join(dir, "fix.patch"),
     GH_TOKEN: "synthetic",
+    GITHUB_RUN_ID: "456",
   });
   globalThis.fetch = async (url, opts) => {
     const path = new URL(url).pathname;
@@ -405,4 +411,140 @@ test("metadata fetch recovers a deleted event head missing from a full branch cl
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("trace links use fixed repository origins and reject invalid IDs and SHAs", () => {
+  const { run, pr } = input();
+  run.id = 123;
+  run.html_url = "https://untrusted.example/run";
+  assert.deepEqual(traceLinks(run, pr, "456"), {
+    source: "https://github.com/tzehon/ynab-mcp/pull/99",
+    commit: `https://github.com/tzehon/ynab-mcp/commit/${sha}`,
+    failure: "https://github.com/tzehon/ynab-mcp/actions/runs/123",
+    autofix: "https://github.com/tzehon/ynab-mcp/actions/runs/456",
+  });
+  for (const bad of [null, 0, -1, "1/evil", "1e3", "9007199254740992"])
+    assert.throws(() => traceLinks(run, pr, bad));
+  assert.throws(() => traceLinks({ ...run, head_sha: "not-a-sha" }, pr, 456));
+  assert.throws(() => traceLinks(run, { ...pr, number: "../../other" }, 456));
+});
+
+async function reportingFixture(results, patch = "true", repairChange = {}) {
+  const { main } = await import("../scripts/ci-autofix.mjs");
+  const dir = mkdtempSync(join(tmpdir(), "ynab-report-"));
+  const before = { ...process.env };
+  const originalFetch = globalThis.fetch;
+  const { run, pr, jobs } = input();
+  run.id = 123;
+  pr.body = body(metadata());
+  const repo = { full_name: "tzehon/ynab-mcp" };
+  const repair = {
+    number: 100,
+    state: "open",
+    draft: true,
+    user: { login: "github-actions[bot]" },
+    head: { ref: `YNAB-99-autofix-${sha}`, repo },
+    base: { ref: pr.head.ref, repo },
+    html_url: "https://untrusted.example/do-not-link",
+    ...repairChange,
+  };
+  const comments = [
+    {
+      user: { login: "github-actions[bot]" },
+      body: `<!-- codex-autofix:${sha} -->`,
+    },
+  ];
+  writeFileSync(
+    join(dir, "event.json"),
+    JSON.stringify({ workflow_run: { id: 123 } }),
+  );
+  Object.assign(process.env, {
+    GITHUB_EVENT_PATH: join(dir, "event.json"),
+    GITHUB_REPOSITORY: "tzehon/ynab-mcp",
+    GITHUB_RUN_ID: "456",
+    GH_TOKEN: "synthetic",
+    GENERATE_RESULT: results[0],
+    VALIDATE_RESULT: results[1],
+    PUBLISH_RESULT: results[2],
+    PATCH_PROPOSED: patch,
+  });
+  globalThis.fetch = async (url, opts) => {
+    assert.equal(new URL(url).origin, "https://api.github.com");
+    const path = new URL(url).pathname;
+    let data;
+    if (path.endsWith("/actions/runs/123")) data = run;
+    else if (path.endsWith("/jobs")) data = { jobs };
+    else if (path.endsWith(`/commits/${sha}/pulls`)) data = [pr];
+    else if (path.endsWith("/pulls/99")) data = pr;
+    else if (path.endsWith("/issues/99/comments")) {
+      if (opts.method === "POST") {
+        comments.push({
+          user: { login: "github-actions[bot]" },
+          ...JSON.parse(opts.body),
+        });
+        data = comments.at(-1);
+      } else data = comments;
+    } else if (path.endsWith("/pulls")) data = [repair];
+    else throw new Error("Unexpected API path or privileged operation");
+    return new Response(JSON.stringify(data), { status: 200 });
+  };
+  try {
+    await main("report");
+    await main("report");
+    return comments;
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const k of Object.keys(process.env))
+      if (!(k in before)) delete process.env[k];
+    Object.assign(process.env, before);
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test("successful outcome links the verified draft and both runs exactly once", async () => {
+  const comments = await reportingFixture(["success", "success", "success"]);
+  assert.equal(comments.length, 2);
+  const text = comments[1].body;
+  for (const path of [
+    "pull/99",
+    "pull/100",
+    "actions/runs/123",
+    "actions/runs/456",
+    `commit/${sha}`,
+  ])
+    assert.ok(text.includes(`https://github.com/tzehon/ynab-mcp/${path}`));
+  assert.match(text, /Draft repair ready/);
+  assert.ok(!text.includes("untrusted.example"));
+  assert.match(text, /No automatic approval, merge or deployment/);
+});
+
+test("no-patch and failed-stage outcomes never claim a published repair", async () => {
+  const noPatch = await reportingFixture(["success", "skipped", "skipped"], "");
+  assert.match(noPatch[1].body, /No repair proposed/);
+  for (const results of [
+    ["failure", "skipped", "skipped"],
+    ["success", "failure", "skipped"],
+    ["success", "success", "failure"],
+    ["cancelled", "skipped", "skipped"],
+  ]) {
+    const comments = await reportingFixture(results);
+    assert.equal(comments.length, 2);
+    assert.match(comments[1].body, /did not complete successfully/);
+    assert.ok(!comments[1].body.includes("Draft repair ready"));
+  }
+});
+
+test("report refuses a false success for a mismatched or non-bot repair", async () => {
+  for (const change of [
+    { draft: false },
+    { state: "closed" },
+    { user: { login: "someone-else" } },
+    { number: "bad" },
+    { head: { ref: "other" } },
+    { base: { ref: "main" } },
+  ])
+    await assert.rejects(
+      reportingFixture(["success", "success", "success"], "true", change),
+    );
+  await assert.rejects(reportingFixture(["unknown", "skipped", "skipped"]));
 });

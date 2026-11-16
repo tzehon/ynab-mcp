@@ -1,0 +1,9 @@
+# Selected verbatim lines from https://github.com/tzehon/ynab-mcp/actions/runs/43804309948
+# This is an excerpt, not the complete log. Environment, unrelated tests and model trace omitted.
+bootstrap-tests	Run npm run check	2026-11-16T04:28:57.8771228Z ✖ showcase addition preserves positive, negative and zero operands (0.99085ms)
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0873921Z ℹ tests 390
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0874524Z ℹ pass 389
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0874762Z ℹ fail 1
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0881714Z ✖ showcase addition preserves positive, negative and zero operands (0.99085ms)
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0882300Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+bootstrap-tests	Run npm run check	2026-11-16T04:30:31.0882893Z   -1 !== 5

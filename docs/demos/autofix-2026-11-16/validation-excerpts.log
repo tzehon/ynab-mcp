@@ -1,0 +1,7 @@
+# Selected verbatim lines from https://github.com/tzehon/ynab-mcp/actions/runs/43804534734
+# This is an excerpt, not the complete log. Environment, unrelated tests and model trace omitted.
+validate	Independently validate with no model or write credential	2026-11-16T04:33:43.7649002Z ✔ showcase addition preserves positive, negative and zero operands (0.472723ms)
+validate	Independently validate with no model or write credential	2026-11-16T04:35:14.5596258Z ℹ tests 390
+validate	Independently validate with no model or write credential	2026-11-16T04:35:14.5596685Z ℹ pass 390
+validate	Independently validate with no model or write credential	2026-11-16T04:35:14.5596870Z ℹ fail 0
+validate	Independently validate with no model or write credential	2026-11-16T04:35:34.7328958Z CONTAINER_CHECK_OK: pinned image, unprivileged PID 1, private volume/socket, bootstrap denial, competing-process refusal, orderly restart, crash residue, bounded offline recovery, symlink refusal, image canary exclusion, no secret logs

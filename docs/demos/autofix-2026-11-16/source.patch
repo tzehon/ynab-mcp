@@ -1,0 +1,25 @@
+diff --git a/src/autofix-showcase.ts b/src/autofix-showcase.ts
+new file mode 100644
+index 0000000..9446d88
+--- /dev/null
++++ b/src/autofix-showcase.ts
+@@ -0,0 +1,3 @@
++export function addDemoIntegers(left: number, right: number): number {
++  return left - right;
++}
+diff --git a/test/autofix-showcase.test.mjs b/test/autofix-showcase.test.mjs
+new file mode 100644
+index 0000000..7574ed7
+--- /dev/null
++++ b/test/autofix-showcase.test.mjs
+@@ -0,0 +1,10 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { addDemoIntegers } from "../dist/autofix-showcase.js";
++
++test("showcase addition preserves positive, negative and zero operands", () => {
++  assert.equal(addDemoIntegers(2, 3), 5);
++  assert.equal(addDemoIntegers(-4, 7), 3);
++  assert.equal(addDemoIntegers(8, 0), 8);
++  assert.equal(addDemoIntegers(10, -2), 8);
++});

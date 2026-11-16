@@ -1,0 +1,12 @@
+[
+  {
+    "url": "https://github.com/tzehon/ynab-mcp/pull/27#issuecomment-6907364453",
+    "body": "<!-- codex-autofix:827bdf0a31a2b4de4daf917dbd838da32da718d0 -->\n### Autofix started\n\n[Source PR #27](https://github.com/tzehon/ynab-mcp/pull/27) \u2192 [failing CI](https://github.com/tzehon/ynab-mcp/actions/runs/43804309948) \u2192 **[watch autofix](https://github.com/tzehon/ynab-mcp/actions/runs/43804534734)**. Offending [commit 827bdf0](https://github.com/tzehon/ynab-mcp/commit/827bdf0a31a2b4de4daf917dbd838da32da718d0).\n\nThe run checks eligibility, proposes a bounded patch, independently validates it, then publishes a draft repair to this feature branch. An outcome comment will link the repair or explain why none was published. One attempt per source commit, including failed/no-patch attempts. No automatic approval, merge or deployment.",
+    "author": "github-actions"
+  },
+  {
+    "url": "https://github.com/tzehon/ynab-mcp/pull/27#issuecomment-6907440861",
+    "body": "<!-- codex-autofix-outcome:43804534734 -->\n### Autofix outcome\n\n**Draft repair ready: [#28](https://github.com/tzehon/ynab-mcp/pull/28).** Independent full tests and container validation passed before publication. The repair targets this PR's feature branch; review and normal PR CI remain required. Bot-created CI may need **Approve workflows to run**.\n\nFollow the chain: [source PR #27](https://github.com/tzehon/ynab-mcp/pull/27) \u2192 [failing CI](https://github.com/tzehon/ynab-mcp/actions/runs/43804309948) \u2192 [autofix run](https://github.com/tzehon/ynab-mcp/actions/runs/43804534734). Offending [commit 827bdf0](https://github.com/tzehon/ynab-mcp/commit/827bdf0a31a2b4de4daf917dbd838da32da718d0).\n\nOne attempt per source commit. No automatic approval, merge or deployment.",
+    "author": "github-actions"
+  }
+]

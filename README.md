@@ -77,3 +77,5 @@ Changes go through Jira-linked, reviewed PRs and rebase merges; never push main.
 Keep real financial data, credentials and configuration in protected private
 storage/1Password, never Git or logs. The existing deployment uses free credits
 only; paid resources require specific authorization.
+
+See the [archived autofix demonstration and repeatable command](docs/demos/autofix-2026-11-16/README.md) for the original failure → repair sequence and how to run a fresh example.

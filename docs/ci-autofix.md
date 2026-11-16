@@ -53,8 +53,10 @@ If the source becomes stale/closed, a job is forcibly stopped, or GitHub reporti
 fails, an outcome may be absent; the original run link remains the place to inspect.
 
 Showcase PRs can be deliberately retained for owner inspection. Label them clearly
-as synthetic demonstrations that must never enter main. After inspection, close
+as synthetic demonstrations that must never enter main. For disposable examples, close
 the repair first, then the source PR, and delete their branches without merging.
+For the permanent archived example, retain both branches and tags after closing;
+see the [archived showcase and repeatable command](demos/autofix-2026-11-16/README.md).
 
 The patch may still be wrong or weaken tests despite passing checks. Review it.
 Original Jira links are retained, but all acceptance entries become pending;

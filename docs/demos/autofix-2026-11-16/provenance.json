@@ -1,0 +1,8 @@
+{
+  "captured_at_utc": "2026-11-16T07:00:58.208045+00:00",
+  "repository": "tzehon/ynab-mcp",
+  "source_commit": "827bdf0a31a2b4de4daf917dbd838da32da718d0",
+  "repair_commit": "629510c54fbd88ef05b883a7e0772d64273c9309",
+  "scope": "Selected original public evidence captured before closing PRs. No full PR bodies/private Jira metadata, raw model transcript or environment logs. Diffs and selected bot comments preserved.",
+  "log_sources": "Original downloaded logs from the verified run IDs; selected lines preserve timestamps and test outcomes."
+}

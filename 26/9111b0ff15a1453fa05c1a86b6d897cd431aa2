@@ -1,0 +1,18 @@
+scripts/lib/pr-metadata.mjs
+  h_60534644ebf874 25
+test/ci-autofix.test.mjs
+  h_60534644ebf874 210,266,343,412,500
+test/ynab-metadata.test.mjs
+  h_60534644ebf874 6-7,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "269111b0ff15a1453fa05c1a86b6d897cd431aa2",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

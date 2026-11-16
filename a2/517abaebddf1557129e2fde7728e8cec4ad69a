@@ -1,0 +1,14 @@
+docs/demos/autofix-2026-11-16/README.md
+  h_60534644ebf874 47-48,51-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a2517abaebddf1557129e2fde7728e8cec4ad69a",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

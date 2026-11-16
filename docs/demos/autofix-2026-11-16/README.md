@@ -44,13 +44,12 @@ Use the pinned Node/npm versions and an authenticated `gh` CLI for the repositor
 owner. Run from a current checkout of this repository. No OpenAI key is needed
 locally; the already configured workflow uses its existing secret.
 
-Find the merged **YNAB-17: Archive autofix evidence and add repeatable demo command**
-implementation PR. It carries the approved reusable demo scope and the
-`autofix-demo-approval:v1` marker. Use its PR number below:
+After [implementation PR #29](https://github.com/tzehon/ynab-mcp/pull/29) is merged,
+it provides the approved reusable demo scope and `autofix-demo-approval:v1` marker:
 
 ```sh
-npm run demo:autofix -- --approval-pr NUMBER
-npm run demo:autofix -- --approval-pr NUMBER --publish
+npm run demo:autofix -- --approval-pr 29
+npm run demo:autofix -- --approval-pr 29 --publish
 ```
 
 The first command makes read-only GitHub checks and previews the operation.

@@ -89,10 +89,20 @@ jobs:
             Repair the failing bootstrap-tests CI for this checked-out YNAB MCP commit.
             Use Node 26.13.0, already installed at /opt/hostedtoolcache/node/26.13.0/x64/bin:
             prepend that directory to PATH for every npm/node invocation.
-            Reproduce with npm run check. Make only the smallest justified source/test
-            correction and rerun npm run check. If the failure does not reproduce,
-            or needs container/infrastructure/configuration/dependency changes, stop
-            without a patch. You have no Docker or network access.
+            Start with npm run check. The protected environment may deny child-process
+            pipes or loopback sockets (EPERM), so full-suite execution can be blocked.
+            If that happens, inspect the relevant source/tests and reproduce a concrete
+            application assertion with an existing targeted test run in-process:
+            node --test --test-isolation=none test/<relevant>.test.mjs
+            Only propose a repair if an application assertion fails independently of
+            those environment restrictions. Preserve the existing assertions. Rebuild
+            and rerun that same test after the smallest justified source/test change,
+            then retry npm run check. Report any remaining environment-blocked tests
+            honestly; the separate validation job must pass the full suite and container
+            check before publication. Never alter tests/config to bypass restrictions.
+            If no application failure reproduces, or the fix needs infrastructure,
+            configuration or dependency changes, stop without a patch.
+            You have no Docker or network access.
             Only regular src/**/*.ts and test/**/*.test.mjs files may change.
             Never weaken tests, reconciliation, financial accuracy, authentication,
             authorization, rate limits or failure handling to make a check green.

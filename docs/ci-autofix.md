@@ -19,8 +19,13 @@ to this repository's admission, patch validation and review requirements.
    Codex action uses `:workspace` and `drop-sudo`, with the API key supplied only
    through its protected action input. Codex has read-only repository permissions,
    no production/Jira secrets, no Docker access and no command network access.
-   It tries to reproduce/fix `npm run check` within ten minutes. Container,
-   metadata, dependency and infrastructure-only failures may produce no patch.
+   It starts with `npm run check` within ten minutes. If the protected environment
+   blocks child-process pipes or loopback sockets, it may reproduce an application
+   assertion using an existing targeted test in-process (`--test-isolation=none`).
+   Assertions stay intact; it rebuilds and reruns the same test after the repair,
+   retries the full check and reports remaining environment restrictions honestly.
+   Full checks and the container gate must still pass independently before any PR.
+   Container, metadata, dependency and infrastructure-only failures produce no patch.
 3. Only a bounded text patch is retained for one day: at most 20 regular source
    TypeScript or `*.test.mjs` files and 100 KB. Configs, dependencies, workflows,
    instructions, deletions, binary files, symlinks and mode changes are rejected.

@@ -1,0 +1,40 @@
+scripts/fetch-pr-event-commits.mjs
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 1-14
+  s_eb80e8fdbdac14::t_0a22ec607a56ce 15-19
+.github/workflows/codex-autofix.yml
+  s_eb80e8fdbdac14::t_91e6210e83e55c 1-19,21-83,85-191
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 20,84
+docs/contributing.md
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 106-108
+  s_eb80e8fdbdac14::t_eb5f2782420eff 128
+scripts/ci-autofix.mjs
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 146,192
+  s_eb80e8fdbdac14::t_91e6210e83e55c 147-156
+  s_eb80e8fdbdac14::t_fade94ee9a59f4 1-145,157-191,193-201
+  s_eb80e8fdbdac14::t_6c4d12bf8115ec 202-366
+test/ci-autofix.test.mjs
+  s_eb80e8fdbdac14::t_41c4ee4df94abf 1-4,6-64,126-127
+  s_eb80e8fdbdac14::t_48c85f47c8a94d 5,65-125
+  s_eb80e8fdbdac14::t_b1ef1499e08131 128-408
+docs/ci-autofix.md
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 1-89
+.github/workflows/pr-checks.yml
+  s_eb80e8fdbdac14::t_91e6210e83e55c 7
+  s_eb80e8fdbdac14::t_cf2f2e333999ab 49-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d0344677f719c3b586a8e45a875b001ad22383d0",
+  "prompts": {},
+  "sessions": {
+    "s_eb80e8fdbdac14": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ae32-3893-78c3-b1ad-2f0098050853",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

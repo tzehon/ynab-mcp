@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'YNAB-*']
     types: [opened, synchronize, reopened, edited]
 
 permissions:
@@ -46,6 +46,8 @@ jobs:
           package-manager-cache: false
       - run: npm ci --ignore-scripts
       - name: Validate event metadata and real commits
-        run: npm run check:pr
+        run: |
+          node scripts/fetch-pr-event-commits.mjs
+          npm run check:pr
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}

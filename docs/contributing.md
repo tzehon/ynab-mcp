@@ -103,7 +103,9 @@ exit 1. Pending evidence is accepted for work in review, printed separately, and
 
 These checks validate syntax, not Jira existence, approval authorship, evidence
 truthfulness or equality with current Jira fields. The agent must independently perform
-the authenticated checks; CI does not authenticate Jira decisions. No Jira/YNAB/OpenAI API credentials enter CI.
+the authenticated checks; CI does not authenticate Jira decisions. No Jira or YNAB API credentials enter CI. The separately enabled
+[CI repair workflow](ci-autofix.md) uses an OpenAI key only in its isolated,
+protected Codex action; ordinary PR checks have no OpenAI key.
 
 ## Review, traceability and completion
 
@@ -123,7 +125,7 @@ issue and PR numbers for later work. Delivered-commit navigation must be checked
 again after merge.
 
 `PR checks` runs `bootstrap-tests` and `pr-metadata` for PR opened, synchronize,
-reopened and edited events against main, with read-only permissions and pinned
+reopened and edited events against main and issue branches, with read-only permissions and pinned
 Actions. A push to main runs application checks; PR metadata is skipped for that
 event. The metadata job reports the event and head SHA; superseded runs cancel.
 Require these exact job names in main's ruleset after their first successful run.

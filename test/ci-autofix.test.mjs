@@ -207,7 +207,7 @@ test("patch is applied to exact clean source only; real Git rejects malformed hu
     assert.equal(readFileSync(join(dir, "src/example.ts"), "utf8"), "new\n");
     rmSync(file);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
@@ -263,7 +263,7 @@ test("admission persists a bot claim and suppresses duplicate attempts", async (
     for (const k of Object.keys(process.env))
       if (!(k in before)) delete process.env[k];
     Object.assign(process.env, before);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
@@ -340,7 +340,7 @@ test("publisher rechecks a stale head before creating a branch and never execute
     for (const k of Object.keys(process.env))
       if (!(k in before)) delete process.env[k];
     Object.assign(process.env, before);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
@@ -409,7 +409,7 @@ test("metadata fetch recovers a deleted event head missing from a full branch cl
       ),
     );
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 });
 
@@ -497,7 +497,7 @@ async function reportingFixture(results, patch = "true", repairChange = {}) {
     for (const k of Object.keys(process.env))
       if (!(k in before)) delete process.env[k];
     Object.assign(process.env, before);
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }
 }
 

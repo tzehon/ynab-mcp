@@ -22,7 +22,8 @@
     "smoke:auth-integrated": "node scripts/integrated-auth-smoke.mjs",
     "check:container": "node scripts/check-container.mjs",
     "smoke:auth-hosted": "npm run build && node --test test/hosted-smoke.test.mjs",
-    "preview:spending": "node scripts/export-spending-preview.mjs"
+    "preview:spending": "node scripts/export-spending-preview.mjs",
+    "demo:autofix": "node scripts/demo-autofix.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/node": "2.1.2",

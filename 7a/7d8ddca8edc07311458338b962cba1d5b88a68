@@ -1,0 +1,14 @@
+test/ci-proof.test.mjs
+  h_60534644ebf874 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a7d8ddca8edc07311458338b962cba1d5b88a68",
+  "prompts": {},
+  "humans": {
+    "h_60534644ebf874": {
+      "author": "tze hon <915365+tzehon@users.noreply.github.com>"
+    }
+  }
+}

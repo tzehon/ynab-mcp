@@ -1,0 +1,26 @@
+[
+  {
+    "baseRefName": "main",
+    "baseRefOid": "0447542ffc4e0dad31a42de67a8ab403d22e28fc",
+    "createdAt": "2026-11-16T04:28:27Z",
+    "headRefName": "YNAB-16-showcase-addition",
+    "headRefOid": "827bdf0a31a2b4de4daf917dbd838da32da718d0",
+    "isDraft": false,
+    "mergedAt": null,
+    "number": 27,
+    "state": "OPEN",
+    "title": "YNAB-16: SHOWCASE \u2014 broken addition triggers autofix (do not merge)"
+  },
+  {
+    "baseRefName": "YNAB-16-showcase-addition",
+    "baseRefOid": "827bdf0a31a2b4de4daf917dbd838da32da718d0",
+    "createdAt": "2026-11-16T04:35:53Z",
+    "headRefName": "YNAB-16-autofix-827bdf0a31a2b4de4daf917dbd838da32da718d0",
+    "headRefOid": "629510c54fbd88ef05b883a7e0772d64273c9309",
+    "isDraft": true,
+    "mergedAt": null,
+    "number": 28,
+    "state": "OPEN",
+    "title": "YNAB-16: Autofix for #27 \u2014 validated repair"
+  }
+]

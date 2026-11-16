@@ -199,3 +199,30 @@ jobs:
           SOURCE_SHA: ${{ needs.admit.outputs.sha }}
           PATCH_FILE: ${{ runner.temp }}/patch/codex.patch
         run: node control/scripts/ci-autofix.mjs publish
+
+  report:
+    needs: [admit, generate, validate, publish]
+    if: always() && needs.admit.outputs.eligible == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '26.13.0'
+          package-manager-cache: false
+      - name: Link the verified outcome from the source PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GENERATE_RESULT: ${{ needs.generate.result }}
+          VALIDATE_RESULT: ${{ needs.validate.result }}
+          PUBLISH_RESULT: ${{ needs.publish.result }}
+          PATCH_PROPOSED: ${{ needs.generate.outputs.has_patch }}
+        run: node scripts/ci-autofix.mjs report

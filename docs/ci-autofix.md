@@ -37,6 +37,24 @@ to this repository's admission, patch validation and review requirements.
    token. No main push, force-push, merge or deployment occurs. A racing source
    update can leave an obsolete draft; inspect its base before integration.
 
+## Follow an attempt
+
+The source PR receives an **Autofix started** bot comment linking its exact commit,
+failing CI and **watch autofix** run. Follow that run through `admit`, `generate`,
+`validate`, `publish` and `report`.
+
+The final **Autofix outcome** comment links the generated **Autofix for #N —
+validated repair** draft, or reports no patch/failed stages honestly. The draft
+links back to the source PR and both runs. A trusted reporting job has no model
+key, contents write permission or candidate execution. It verifies the associated
+bot-created draft before posting a success link and suppresses duplicate outcomes.
+If the source becomes stale/closed, a job is forcibly stopped, or GitHub reporting
+fails, an outcome may be absent; the original run link remains the place to inspect.
+
+Showcase PRs can be deliberately retained for owner inspection. Label them clearly
+as synthetic demonstrations that must never enter main. After inspection, close
+the repair first, then the source PR, and delete their branches without merging.
+
 The patch may still be wrong or weaken tests despite passing checks. Review it.
 Original Jira links are retained, but all acceptance entries become pending;
 the bot asserts no new approval or completed criteria. It cannot read Jira.

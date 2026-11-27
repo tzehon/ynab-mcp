@@ -7,6 +7,10 @@ deployment and actual owner-only reads. Ask only for necessary human interventio
 or commitments outside that scope. Record concrete decisions in Jira as delegated
 approvals; never imply the owner personally posted them.
 
+When creating or refining a Jira issue, follow the
+[issue-planning workflow](https://github.com/tzehon/research/blob/main/ynab-mcp-sdlc-guide/02-codex-workflow.md)
+for intent, spec, acceptance criteria, and plan.
+
 Jira owns intent, Spec, Plan, AC and decisions. Read the issue/comments at task
 start; compare live fields with the approved, independently verified snapshot
 before implementation, publication and merge. Record revised scope/approval for
